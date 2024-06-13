@@ -1,0 +1,155 @@
+---
+title: "Visualisation of the Empirical Attainment Function"
+author: "Yasin Gija"
+date: "2024-06-13"
+output:
+  html_document:
+    df_print: paged
+---
+
+## Previous plot of gcp2x2 using eafplot
+
+```{r dot2,echo=TRUE,warning=FALSE,message=FALSE}
+library(plotly)
+library(eaf)
+library(dplyr)
+library(moocore)
+data(gcp2x2)
+tabucol <- subset(gcp2x2, alg != "TSinN1")
+tabucol$alg <- tabucol$alg[drop=TRUE]
+eafplot(time + best ~ run, data = tabucol, subset = tabucol$inst=="DSJC500.5")
+```
+
+## New plot of gcp2x2 using Plotly
+
+```{r dot,echo=TRUE,warning=FALSE,message=FALSE}
+tabucol <- subset(gcp2x2, alg != "TSinN1")
+tabucol$alg <- tabucol$alg[drop=TRUE]
+data<-tabucol %>% filter(inst=="DSJC500.5")
+newdata<-as.data.frame(eaf(data[c("time","best","run")]))
+newdata2<-newdata %>% filter(V3==10 | V3==50 | V3==100)
+newdata<-arrange(newdata,V2)
+newdata2 = mutate(newdata2, V3 = case_when( 
+                                  V3  == "10" ~ "Best",
+                                  V3 == "50" ~ "Median",
+                                  V3 == "100" ~ "Worst",))
+colnames(newdata2) <- c("Time","Best","Scenario")
+
+fig <- plot_ly(newdata2, x = ~Time, y = ~Best, groups=~Scenario, color=factor(newdata2$Scenario),line = list(shape = "hv"),type = 'scatter', mode = "lines+markers")%>%
+  layout(title="The Same Figure in Plotly", legend=list(title=list(text='Scenario')),
+         plot_bgcolor='#e5ecf6', 
+         xaxis = list( 
+           zerolinecolor = '#ffff', 
+           zerolinewidth = 2, 
+           gridcolor = 'ffff'), 
+         yaxis = list( 
+           zerolinecolor = '#ffff', 
+           zerolinewidth = 2, 
+           gridcolor = 'ffff'))
+fig
+
+'get largest y value in each set and draw vertical line from it using yref:paper.
+get largest x val in each set and draw horizontal line using xref:paper'
+uniqueScenario <- print(unique(newdata2$Scenario))
+for (i in uniqueScenario){
+  max_y_point <- newdata2 %>% filter(Best == max(Best),Scenario==i)
+  print(max_y_point)
+  'max_y_point <- newdata2 %>% filter(Best == max(Best))
+  print(max_y_point)'
+}
+```
+
+## Plot of A1 using Plotly
+
+```{r pressure, echo=TRUE,warning=FALSE,message=FALSE}
+A1 <- read_datasets(text='  
+  3 2
+  2 3
+  
+  2.5 1
+  1 2
+  
+  1 2
+ ')
+data <- data.frame(A1)
+
+fig <- plot_ly(data, x = ~V1, y = ~V2, type = 'scatter',color=factor(data$set),line = list(shape = "hv"), mode = "lines+markers")%>%
+  layout(title="A Plotly Figure", legend=list(title=list(text='set')),
+         plot_bgcolor='#e5ecf6', 
+         xaxis = list( 
+           zerolinecolor = '#ffff', 
+           zerolinewidth = 2, 
+           gridcolor = 'ffff'), 
+         yaxis = list( 
+           zerolinecolor = '#ffff', 
+           zerolinewidth = 2, 
+           gridcolor = 'ffff'))
+fig
+```
+
+## Plot of A2 using Plotly
+
+```{r two}
+A2 <- read_datasets(text='
+  4 2.5
+  3 3
+  2.5 3.5
+  
+  3 3
+  2.5 3.5
+  
+  2 1
+ ')
+data <- data.frame(A2)
+
+fig <- plot_ly(data, x = ~V1, y = ~V2, type = 'scatter',color=factor(data$set),line = list(shape = "hv"), mode = "lines+markers")%>%
+  layout(title="A Plotly Figure", legend=list(title=list(text='set')),
+         plot_bgcolor='#e5ecf6', 
+         xaxis = list( 
+           zerolinecolor = '#ffff', 
+           zerolinewidth = 2, 
+           gridcolor = 'ffff'), 
+         yaxis = list( 
+           zerolinecolor = '#ffff', 
+           zerolinewidth = 2, 
+           gridcolor = 'ffff'))
+fig
+```
+
+```{r a,echo=FALSE}
+A1 <- read_datasets(text='  
+  3 2
+  2 3
+  2 3.5
+  
+  2.5 1
+  1 2
+  
+  1 2
+ ')
+A2 <- read_datasets(text='
+  4 2.5
+  3 3
+  2.5 3.5
+  
+  3 3
+  2.5 3.5
+  
+  2 1
+ ')
+'compdata <- data.frame(eafdiff(A1,A2))'
+compdata <- rbind.data.frame(A1,A2)
+
+fig <- plot_ly(compdata, x = ~V1, y = ~V2, type = 'scatter', color=factor(compdata$set),line = list(shape = "vh"), mode = "lines+markers")%>%
+  layout(title="A Plotly Figure", legend=list(title=list(text='set')),
+         plot_bgcolor='#e5ecf6', 
+         xaxis = list( 
+           zerolinecolor = '#ffff', 
+           zerolinewidth = 2, 
+           gridcolor = 'ffff'), 
+         yaxis = list( 
+           zerolinecolor = '#ffff', 
+           zerolinewidth = 2, 
+           gridcolor = 'ffff'))
+'fig'
+```
