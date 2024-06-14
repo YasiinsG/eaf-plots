@@ -1,4 +1,7 @@
  - [ ] Interactive eafplot()
+   - [ ] Fix zoom
+   - [ ] Handle maximise parameter
+   - [ ] Handle type="area"
  - [ ] Interactive eafdiffplot()
  - [ ] Interactive symdevplot():
 https://multi-objective.github.io/mooplot/r/reference/symdevplot.html
