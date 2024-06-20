@@ -23,20 +23,42 @@
 ## <ins>  Week 2 </ins> (W/B 17/6)
 
 **Monday**
-   - Morning:
-   - Afternoon:
+   - Morning: Created the functionality to allow various percentile inputs.
+   - Afternoon: Meeting and removing unnecessary elements from plot.
      
  **Tuesday:**
-   - Morning:
-   - Afternoon:
+   - Morning: Implementing some parts of the maximise parameter
+   - Afternoon: Implementing some aspects of the maximise parameter
      
  **Wednesday:**
-   - Morning:
-   - Afternoon:
+   - Morning: Attempts to plot infinite lines
+   - Afternoon: Attempts to plot infinite lines
      
  **Thursday:**
+   - Morning: Attempts to plot infinite lines.
+   - Afternoon: Troubleshooting and devising other methods to draw infinite lines in ggplotly.
+     
+ **Friday:**
    - Morning:
    - Afternoon:
+
+## <ins>  Week 3 </ins> (W/B 24/6)
+
+**Monday**
+   - Morning: 
+   - Afternoon: 
+     
+ **Tuesday:**
+   - Morning: 
+   - Afternoon: 
+     
+ **Wednesday:**
+   - Morning: 
+   - Afternoon: 
+     
+ **Thursday:**
+   - Morning: 
+   - Afternoon: 
      
  **Friday:**
    - Morning:
