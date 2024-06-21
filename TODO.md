@@ -1,6 +1,6 @@
  - [ ] Interactive eafplot()
-   - [ ] Fix zoom
-   - [ ] Handle maximise parameter
+   - [x] Fix zoom
+   - [x] Handle maximise parameter
    - [ ] Handle type="area"
  - [ ] Interactive eafdiffplot()
  - [ ] Interactive symdevplot():
