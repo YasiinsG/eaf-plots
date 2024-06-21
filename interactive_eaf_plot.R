@@ -9,7 +9,6 @@ library(scales)
 
 interactiveeafplot <- 
   function(x, percentiles=c(10,50,100), maximise=FALSE, xlabel=NULL, ylabel =NULL, sci.notation=FALSE){
-    ##DO ALL CHECKS AGAINST INPUTS FIRST, THEN PLOT GRAPH
     
     #Function to plot axis in scientific format
     scientific <- function(x){
@@ -46,73 +45,70 @@ interactiveeafplot <-
       stop("sci.notation must be a boolean value")
     }
     
-    
     ##PLOT GRAPH
-    eafdata<-as.data.frame(eaf(x))
+    eafdata<-as.data.frame(eaf(x,maximise = maximise))
+    #eafdata$V3<- round_any(eafdata$V3, 10, f = ceiling)
+    print(eafdata)
+    eafdata[3]<-round(eafdata[3],-1)
+    print(eafdata)
     newdata2 <- eafdata %>% filter(V3 %in% percentiles)
     newdata2<-arrange(newdata2,desc(newdata2[2]))
-    #newdata2 <- newdata[order(-newdata[2]),]
-    #newdata2 <- order(newdata[newdata[2],])
-    #newdata2 <- mutate(newdata2, V3 = case_when( 
-    #  V3  == 10 ~ "Best",
-    #  V3 == 50 ~ "Median",
-    #  V3 == 100 ~ "Worst"))
+    newdata2 <- mutate(newdata2, V3 = case_when(
+     V3  == 10 ~ "Best",
+     V3 == 50 ~ "Median",
+     V3 == 100 ~ "Worst"))
     colnames(newdata2) <- c("Time","Best","Scenario")
     
-    ##maximise
-    #for x=2:n-1,
-    #take y value of element x-1 and x value of element x+1 to be new point
-    #get unique scenarios
-    #loop thru each scenario filtering for just them.
-    #then get new x and y
-    #then merge back
-    if (maximise==TRUE){
-      #newdata2 %>%
-      #  mutate(newcolx = NA) %>%
-      #  mutate(newcoly = NA)
-      newdata2<-arrange(newdata2,desc(newdata2[2]))
-      uniqueScenario <- unique(newdata2$Scenario)
-      maximisedData <- data.frame(matrix(NA, nrow = 0, ncol = ncol(newdata2)))
-      colnames(maximisedData) <- c("Time","Best","Scenario")
-      for (i in uniqueScenario){
-        filteredData <- newdata2[newdata2$Scenario==i,]
-        filteredData %>%
-          mutate(newcolx = NA) 
-        #%>%
-          #mutate(newcoly = NA)
-        
-        for (a in 2:nrow(filteredData)){
-          newXPoint <- filteredData[a+2,1]
-          #newYPoint <- filteredData[a,2]
-          filteredData[a,4] <- newXPoint
-          #filteredData[a,5] <- newYPoint
-        }
-        filteredData <- subset(filteredData, select = -c(Time))
-        filteredData <- filteredData %>%
-          select(V4, everything())
-        names(filteredData)[names(filteredData) == 'V4'] <- 'Time'
-        #newdata2 <- merge(maximisedData,filteredData,all=TRUE)
-        maximisedData<-rbind(maximisedData,filteredData)
-        #newdata2$Time <- replace(newdata2$Time, filteredData$Time, newdata2$Best == filteredData$best && newdata2$Scenario == filteredData$Scenario)
-        #newdata2 = merge(newdata2, filteredData, by = c("Best","Scenario"),all.x=TRUE)
-        #newdata2 <- subset(newdata2, select=-c())
-        #newdata2 %>% mutate(mycol = coalesce(x,y,z)) %>%
-        #  select(a, mycol)
-        #newdata2 <- merge(x=newdata2,y=filteredData,by=c("Best","Scenario"),all.x=TRUE)
-      }
-      maximisedData <- maximisedData[!is.na(maximisedData$Time), ]
-      print(maximisedData)
-      newdata2 <- maximisedData
-      print(newdata2)
-      #newdata2[1,1]<-NA
-      #newdata2[2,1]<-NA
-      #newdata2[1,tail(newdata2,n=1)]<-NA
-      #newdata2[2,tail(newdata2,n=1)]<-NA
+    uniqueScenario <- unique(newdata2$Scenario)
+    
+    datalist=list()
+    datalist2=list()
+    i=1
+    for (a in uniqueScenario){
+      uniqueData <- newdata2 %>% filter(Scenario %in% a)
+      firstDataElement <- head(uniqueData,n=1)
+      lastDataElement <- tail(uniqueData,n=1)
+      datalist[[i]]<- firstDataElement
+      datalist2[[i]]<-lastDataElement
+      i <- i+1
+    }
+    big_data = data.frame(do.call(rbind, datalist))
+    big_data2 = data.frame(do.call(rbind, datalist2))
+    
+    if(length(maximise)==1){
+      if (maximise==TRUE){
+        big_data$Time <- .Machine$double.xmax*-1
+        big_data2$Best <- .Machine$double.xmax*-1}
+      else{
+        big_data$Best <- .Machine$double.xmax
+        big_data2$Time <- .Machine$double.xmax}
+    }
+    else{
+      if(all(maximise==c(TRUE,FALSE))){
+        big_data$Best <- .Machine$double.xmax
+        big_data2$Time <- .Machine$double.xmax*-1}
+      else{
+        big_data$Time <- .Machine$double.xmax
+        big_data2$Best <- .Machine$double.xmax*-1}
     }
     
-    p <- ggplot(newdata2, aes(x=Time,
-                         y=Best,
-                         color=factor(Scenario))) +
+    big_data3 <- rbind(big_data2,big_data)
+    newdata3<- rbind(newdata2,big_data3)
+    
+    if(all(maximise==c(TRUE,FALSE))){
+      newdata3<-arrange(newdata3,newdata3$Best)
+    }
+    else if(all(maximise==c(FALSE,TRUE))){
+      newdata3<-arrange(newdata3,newdata3$Best)
+    }
+    else{
+      newdata3<-arrange(newdata3,desc(newdata3$Best))}
+    print(newdata3)
+    
+    
+    p <- ggplot(data = newdata3, aes(x=Time,
+                                     y=Best,
+                                     color=factor(Scenario))) +
       geom_point(size=3) +
       labs(color = NULL) +
       geom_step(direction = "hv") +
@@ -122,18 +118,15 @@ interactiveeafplot <-
       {if (sci.notation==TRUE)
         scale_y_continuous(label = scientific)} +
       {if (is.null(xlabel)){
-        xlab(colnames(newdata2)[1])}
+        xlab(colnames(newdata3)[1])}
         else {
           xlab(xlabel)}} +
       {if (is.null(ylabel)){
-        ylab(colnames(newdata2)[2])}
+        ylab(colnames(newdata3)[2])}
         else {
           ylab(ylabel)}}
     
-    'x = colnames(newdata2)[1],'
-    'y = colnames(newdata2)[2],'
-    ggplotly(p)
-    
+    ggplotly(p,dynamicTicks=TRUE )
   }
 
 data(gcp2x2)
@@ -141,5 +134,18 @@ tabucol <- subset(gcp2x2, alg != "TSinN1")
 tabucol$alg <- tabucol$alg[drop=TRUE]
 data<-tabucol %>% filter(inst=="DSJC500.5")
 mydata <- data[c("time","best","run")]
-interactiveeafplot(mydata,c(10,50,100),maximise=FALSE,sci.notation = TRUE,xlab="my x axis",ylab="my y axis")
-interactiveeafplot(mydata,c(10,50,100),maximise=TRUE,sci.notation = TRUE,xlab="my x axis",ylab="my y axis")
+# interactiveeafplot(mydata,c(10,50,100),maximise=FALSE,sci.notation = FALSE,xlab="MIN X",ylab="MIN Y")
+# interactiveeafplot(mydata,c(10,50,100),maximise=TRUE,sci.notation = FALSE,xlab="MAX X",ylab="MAX Y")
+# interactiveeafplot(mydata,c(10,50,100),maximise=c(FALSE,TRUE),sci.notation = FALSE,xlab="MIN X",ylab="MAX Y")
+# interactiveeafplot(mydata,c(10,50,100),maximise=c(TRUE,FALSE),sci.notation = FALSE,xlab="MAX X",ylab="MIN Y")
+
+data(SPEA2minstoptimeRichmond)
+SPEA2minstoptimeRichmond[,2] <- SPEA2minstoptimeRichmond[,2] / 60
+# interactiveeafplot(SPEA2minstoptimeRichmond, xlab = "C[E]",
+#          ylab = "Minimum idle time (minutes)", maximise = c(FALSE, FALSE))
+# interactiveeafplot(SPEA2minstoptimeRichmond, xlab = "C[E]",
+#                    ylab = "Minimum idle time (minutes)", maximise = c(TRUE, TRUE))
+#interactiveeafplot(SPEA2minstoptimeRichmond, xlab = "C[E]",
+#                   ylab = "Minimum idle time (minutes)", maximise = c(FALSE, TRUE))
+# interactiveeafplot(SPEA2minstoptimeRichmond, xlab = "C[E]",
+#                    ylab = "Minimum idle time (minutes)", maximise = c(TRUE, FALSE))
