@@ -23,24 +23,24 @@
 ## <ins>  Week 2 </ins> (W/B 17/6)
 
 **Monday**
-   - Morning: Created the functionality to allow various percentile inputs.
-   - Afternoon: Meeting and removing unnecessary elements from plot.
+   - Morning: Created the functionality to allow various percentile inputs. (3 hrs)
+   - Afternoon: Meeting and removing unnecessary elements from plot. (4 hrs)
      
  **Tuesday:**
-   - Morning: Implementing some parts of the maximise parameter
-   - Afternoon: Implementing some aspects of the maximise parameter
+   - Morning: Implementing some parts of the maximise parameter (2 hrs)
+   - Afternoon: Implementing some aspects of the maximise parameter (5 hrs)
      
  **Wednesday:**
-   - Morning: Attempts to plot infinite lines
-   - Afternoon: Attempts to plot infinite lines
+   - Morning: Attempts to plot infinite lines (3 hrs)
+   - Afternoon: Attempts to plot infinite lines (4 hrs)
      
  **Thursday:**
-   - Morning: Attempts to plot infinite lines.
-   - Afternoon: Troubleshooting and devising other methods to draw infinite lines in ggplotly.
+   - Morning: Attempts to plot infinite lines. (3 hrs)
+   - Afternoon: Troubleshooting and devising other methods to draw infinite lines in ggplotly. (4 hrs)
      
  **Friday:**
-   - Morning:
-   - Afternoon:
+   - Morning: Plotted Infinite lines for gcp2x2 data (4 hrs)
+   - Afternoon: Plotted maximum and max/min plots for gcp2x2. (3 hrs)
 
 ## <ins>  Week 3 </ins> (W/B 24/6)
 
