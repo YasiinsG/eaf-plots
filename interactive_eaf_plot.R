@@ -10,8 +10,6 @@ library(tidyverse)
 
 #things to do:
 #fix shading/filling upto Inf or similar
-#type=point or area
-#sort out white colour input
 #choice of dashed line or not
 #size of points
 #legend position
@@ -21,7 +19,7 @@ library(tidyverse)
 #fix sci.notation
 
 
-interactiveeafplot <- function(x, percentiles=c(0,50,100), maximise=FALSE, col=c("white","black"), xlabel=NULL, ylabel =NULL, sci.notation=FALSE){
+interactiveeafplot <- function(x, percentiles=c(0,50,100), maximise=FALSE, col=c("white","black"), type="point", xlabel=NULL, ylabel =NULL, sci.notation=FALSE){
   
   #Function to plot axis in scientific format
   scientific <- function(x){
@@ -119,7 +117,7 @@ interactiveeafplot <- function(x, percentiles=c(0,50,100), maximise=FALSE, col=c
   
   p <- ggplot(data = newdata3, aes(x=Time, y=Best, color=factor(Scenario))) +
     {if (any(c("white") %in% col)){
-      scale_color_manual(values = plotcol[-1])
+      scale_color_manual(values = plotcol[plotcol != "#FFFFFF"])
     }
       else{
         scale_color_manual(values = plotcol)
@@ -127,7 +125,15 @@ interactiveeafplot <- function(x, percentiles=c(0,50,100), maximise=FALSE, col=c
       } +
     labs(color = NULL) +
     geom_step(direction = "vh") +
-    scale_fill_manual(values = plotcol,name="") +
+    {if(type=="area"){
+      if (any(c("white") %in% col)){
+        scale_fill_manual(values = plotcol[plotcol != "#FFFFFF"],name="")
+        }
+      else{
+        scale_fill_manual(values = plotcol,name="")
+        }
+      }
+      } +
     geom_point(size=2) +
     theme_bw() +
     {if (sci.notation==TRUE)
@@ -143,26 +149,27 @@ interactiveeafplot <- function(x, percentiles=c(0,50,100), maximise=FALSE, col=c
       else {
         ylab(ylabel)}}
   
-  print(newdata3)
-  
-  if (all(maximise==c(TRUE,TRUE))){
-    p<-p+
-      geom_rect(aes(xmin = next_Time, xmax = min(newdata2$Time), ymin = next_Best, ymax = min(newdata2$Best), fill = fill_color), alpha = 0.6,colour=NA)
-  }
-  else if(all(maximise==c(FALSE,FALSE))){
-    p<-p+
-      geom_rect(aes(xmin = Time, xmax = max(newdata2$Time), ymin =max(newdata2$Best),ymax=next_Best, fill = fill_color), alpha = 0.6,colour=NA)
-  }
-  else if(all(maximise==c(TRUE,FALSE))){
-    p<-p+
-      geom_rect(aes(xmin = next_Time, xmax = min(newdata2$Time), ymin = next_Best, ymax = max(newdata2$Best), fill = fill_color), alpha = 0.6,colour=NA)
-  }
-  else{
-    p<-p+
-      geom_rect(aes(xmin = Time, xmax = max(newdata2$Time), ymin = next_Best, ymax = min(newdata2$Best), fill = fill_color), alpha = 0.6,colour=NA)
+  if (type=="area"){
+    if (all(maximise==c(TRUE,TRUE))){
+      p<-p+
+        geom_rect(aes(xmin = next_Time, xmax = min(newdata2$Time), ymin = next_Best, ymax = min(newdata2$Best), fill = fill_color), alpha = 0.6,colour=NA)
+    }
+    else if(all(maximise==c(FALSE,FALSE))){
+      p<-p+
+        geom_rect(aes(xmin = Time, xmax = max(newdata2$Time), ymin =max(newdata2$Best),ymax=next_Best, fill = fill_color), alpha = 0.6,colour=NA)
+    }
+    else if(all(maximise==c(TRUE,FALSE))){
+      p<-p+
+        geom_rect(aes(xmin = next_Time, xmax = min(newdata2$Time), ymin = next_Best, ymax = max(newdata2$Best), fill = fill_color), alpha = 0.6,colour=NA)
+    }
+    else{
+      p<-p+
+        geom_rect(aes(xmin = Time, xmax = max(newdata2$Time), ymin = next_Best, ymax = min(newdata2$Best), fill = fill_color), alpha = 0.6,colour=NA)
+    }
   }
 
   myplot<- ggplotly(p,dynamicTicks = TRUE)
+  
   for (i in 1:length(myplot$x$data)){
     if (!is.null(myplot$x$data[[i]]$name)){
       myplot$x$data[[i]]$name =  gsub("\\(","",str_split(myplot$x$data[[i]]$name,",")[[1]][1])
@@ -172,17 +179,16 @@ interactiveeafplot <- function(x, percentiles=c(0,50,100), maximise=FALSE, col=c
   }
 
 #Testing data
-#dataset 1
 # data(gcp2x2)
 # tabucol <- subset(gcp2x2, alg != "TSinN1")
 # tabucol$alg <- tabucol$alg[drop=TRUE]
 # data <- tabucol %>% filter(inst=="DSJC500.5")
 # mydata <- data[c("time","best","run")]
-# interactiveeafplot(mydata, c(0,50,100), maximise=FALSE, sci.notation=FALSE, xlabel="MIN X", ylabel="MIN Y")
+# interactiveeafplot(mydata, c(0,50,100), col=c("yellow","red"),maximise=FALSE, type="area",sci.notation=FALSE, xlabel="MIN X", ylabel="MIN Y")
 # interactiveeafplot(mydata,c(0,50,100), col=c("yellow","red"),maximise=TRUE,sci.notation = FALSE,xlab="MAX X",ylab="MAX Y")
 # interactiveeafplot(mydata,c(0,50,100), col=c("yellow","red"),maximise=c(FALSE,TRUE),sci.notation = FALSE,xlab="MIN X",ylab="MAX Y")
 # interactiveeafplot(mydata,c(0,50,100), col=c("yellow","red"),maximise=c(TRUE,FALSE),sci.notation = FALSE,xlab="MAX X",ylab="MIN Y")
-#dataset 2
+# 
 # data(SPEA2minstoptimeRichmond)
 # SPEA2minstoptimeRichmond[,2] <- SPEA2minstoptimeRichmond[,2] / 60
 # interactiveeafplot(SPEA2minstoptimeRichmond, col=c("yellow","red"), xlab = "C[E]",
