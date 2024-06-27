@@ -10,21 +10,31 @@ library(tidyverse)
 
 #things to do:
 #fix shading/filling upto Inf or similar
-#choice of dashed line or not
-#size of points
-#legend position
-#x axis side:bottom or top
-#y axis side: left or right
-#axes: axes or no axes?
-#fix sci.notation
+#fix sci.notation, maybe rotate tick labels?
+#sort out hover over points and shaded area
 
 
-interactiveeafplot <- function(x, percentiles=c(0,50,100), maximise=FALSE, col=c("white","black"), type="point", xlabel=NULL, ylabel =NULL, sci.notation=FALSE){
+interactiveeafplot <- function(
+    x,
+    percentiles=c(0,50,100),
+    maximise=FALSE,
+    col=c("white","black"),
+    type="point",
+    lty="solid",
+    psize=2,
+    pshape=16,
+    legend.pos="topright",
+    xaxis.side="below",
+    yaxis.side="left",
+    axes=TRUE,
+    xlabel=NULL,
+    ylabel =NULL,
+    sci.notation=FALSE){
   
   #Function to plot axis in scientific format
-  scientific <- function(x){
-    ifelse(x==0, "0", parse(text=gsub("[+]", "", gsub("e", " %*% 10^", scientific_format()(x)))))
-  }
+  # scientific <- function(x){
+  #   ifelse(x==0, "0", parse(text=gsub("[+]", "", gsub("e", " %*% 10^", scientific_format()(x)))))
+  # }
   
   #CHECK x input
   #table needs to be of size three columns
@@ -38,9 +48,9 @@ interactiveeafplot <- function(x, percentiles=c(0,50,100), maximise=FALSE, col=c
   
   #CHECK sci.notation input
   #If not Boolean output stop
-  if (sci.notation != TRUE&FALSE){
-    stop("sci.notation must be a boolean value")
-  }
+  # if (sci.notation != TRUE&FALSE){
+  #   stop("sci.notation must be a boolean value")
+  # }
   
   if(length(maximise)==1){
     if (maximise==TRUE){
@@ -50,7 +60,6 @@ interactiveeafplot <- function(x, percentiles=c(0,50,100), maximise=FALSE, col=c
       maximise<-c(FALSE,FALSE)
     }
   }
-  
   
   eafdata<-as.data.frame(eaf(x,maximise = maximise,percentiles = percentiles))
   newdata2 <- eafdata
@@ -124,7 +133,7 @@ interactiveeafplot <- function(x, percentiles=c(0,50,100), maximise=FALSE, col=c
         }
       } +
     labs(color = NULL) +
-    geom_step(direction = "vh") +
+    geom_step(direction = "vh",linetype=lty) +
     {if(type=="area"){
       if (any(c("white") %in% col)){
         scale_fill_manual(values = plotcol[plotcol != "#FFFFFF"],name="")
@@ -134,12 +143,15 @@ interactiveeafplot <- function(x, percentiles=c(0,50,100), maximise=FALSE, col=c
         }
       }
       } +
-    geom_point(size=2) +
+    {if(psize!=0){
+      geom_point(size=psize,shape=pshape)
+    }}+
     theme_bw() +
-    {if (sci.notation==TRUE)
-      scale_x_continuous(label = scientific)} +
-    {if (sci.notation==TRUE)
-      scale_y_continuous(label = scientific)} +
+    theme(legend.position = legend.pos)+
+    {if (axes==FALSE){
+          theme(axis.title = element_blank(),
+          axis.text = element_blank(),
+          axis.ticks = element_blank())}}+
     {if (is.null(xlabel)){
       xlab(colnames(newdata3)[1])}
       else {
@@ -148,6 +160,10 @@ interactiveeafplot <- function(x, percentiles=c(0,50,100), maximise=FALSE, col=c
       ylab(colnames(newdata3)[2])}
       else {
         ylab(ylabel)}}
+  
+  if (sci.notation==TRUE){
+    p<-p+scale_y_continuous(labels = scientific)
+    p<-p+scale_x_continuous(labels = scientific)}
   
   if (type=="area"){
     if (all(maximise==c(TRUE,TRUE))){
@@ -167,7 +183,8 @@ interactiveeafplot <- function(x, percentiles=c(0,50,100), maximise=FALSE, col=c
         geom_rect(aes(xmin = Time, xmax = max(newdata2$Time), ymin = next_Best, ymax = min(newdata2$Best), fill = fill_color), alpha = 0.6,colour=NA)
     }
   }
-
+  
+  
   myplot<- ggplotly(p,dynamicTicks = TRUE)
   
   for (i in 1:length(myplot$x$data)){
@@ -175,7 +192,50 @@ interactiveeafplot <- function(x, percentiles=c(0,50,100), maximise=FALSE, col=c
       myplot$x$data[[i]]$name =  gsub("\\(","",str_split(myplot$x$data[[i]]$name,",")[[1]][1])
     }
   }
-  myplot
+  
+  
+  {if(legend.pos=="top"){
+    myplot<-myplot%>%
+      layout(legend = list(orientation = "h",xanchor="center",yanchor="top", y = 0.99, x = 0.5))
+  }
+  else if(legend.pos=="topleft"){
+    myplot<-myplot%>%
+      layout(legend = list(orientation = "v",xanchor="left",yanchor="top", y = 0.99, x = 0.01))
+  }
+  else if(legend.pos=="bottomright"){
+    myplot<-myplot%>%
+      layout(legend = list(orientation = "v",xanchor="right",yanchor="bottom", y = 0.01, x = 0.99))
+  }
+  else if(legend.pos=="bottom"){
+    myplot<-myplot%>%
+      layout(legend = list(orientation = "h",xanchor="center",yanchor="bottom", y = 0.01, x = 0.5))
+  }
+  else if(legend.pos=="bottomleft"){
+    myplot<-myplot%>%
+      layout(legend = list(orientation = "v",xanchor="left",yanchor="bottom", y = 0.01, x = 0.01))
+  }
+  else if(legend.pos=="right"){
+    myplot<-myplot%>%
+      layout(legend = list(orientation = "v",xanchor="right",yanchor="middle", y = 0.5, x = 0.99))
+  }
+  else if(legend.pos=="left"){
+    myplot<-myplot%>%
+      layout(legend = list(orientation = "v",xanchor="left",yanchor="middle", y = 0.5, x = 0.01))
+  }
+  else if(legend.pos=="center"){
+    myplot<-myplot%>%
+      layout(legend = list(orientation = "v",xanchor="center",yanchor="middle", y = 0.5, x = 0.425))
+  }
+  else{
+    myplot<-myplot%>%
+      layout(legend = list(orientation = "v",xanchor="right",yanchor="top", y = 0.99, x = 0.99))
+  }}
+  
+  myplot<-myplot %>%
+    layout(xaxis=list(side=xaxis.side),
+           yaxis = list(side=yaxis.side))
+  
+  return(myplot)
   }
 
 #Testing data
@@ -184,7 +244,21 @@ interactiveeafplot <- function(x, percentiles=c(0,50,100), maximise=FALSE, col=c
 # tabucol$alg <- tabucol$alg[drop=TRUE]
 # data <- tabucol %>% filter(inst=="DSJC500.5")
 # mydata <- data[c("time","best","run")]
-# interactiveeafplot(mydata, c(0,50,100), col=c("yellow","red"),maximise=FALSE, type="area",sci.notation=FALSE, xlabel="MIN X", ylabel="MIN Y")
+# interactiveeafplot(mydata,
+#                    c(0,50,100),
+#                    col=c("yellow","red"),
+#                    maximise=FALSE,
+#                    type="point",
+#                    lty="longdash",
+#                    psize=3,
+#                    pshape=10,
+#                    legend.pos="topright",
+#                    xaxis.side="bottom",
+#                    yaxis.side="left",
+#                    axes=TRUE,
+#                    sci.notation=TRUE,
+#                    xlabel="MIN X",
+#                    ylabel="MIN Y")
 # interactiveeafplot(mydata,c(0,50,100), col=c("yellow","red"),maximise=TRUE,sci.notation = FALSE,xlab="MAX X",ylab="MAX Y")
 # interactiveeafplot(mydata,c(0,50,100), col=c("yellow","red"),maximise=c(FALSE,TRUE),sci.notation = FALSE,xlab="MIN X",ylab="MAX Y")
 # interactiveeafplot(mydata,c(0,50,100), col=c("yellow","red"),maximise=c(TRUE,FALSE),sci.notation = FALSE,xlab="MAX X",ylab="MIN Y")
@@ -197,5 +271,5 @@ interactiveeafplot <- function(x, percentiles=c(0,50,100), maximise=FALSE, col=c
 #                    ylab = "Minimum idle time (minutes)", maximise = c(TRUE, TRUE))
 # interactiveeafplot(SPEA2minstoptimeRichmond, col=c("yellow","red"), xlab = "C[E]",
 #                   ylab = "Minimum idle time (minutes)", maximise = c(FALSE, TRUE))
-# interactiveeafplot(SPEA2minstoptimeRichmond, col=c("yellow","red"), xlab = "C[E]",
+# interactiveeafplot(SPEA2minstoptimeRichmond, col=c("yellow","red"),sci.notation = TRUE, xlab = "C[E]",
 #                    ylab = "Minimum idle time (minutes)", maximise = c(TRUE, FALSE))
