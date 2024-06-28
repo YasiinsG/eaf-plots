@@ -9,9 +9,7 @@ library(tidyr)
 library(tidyverse)
 
 #things to do:
-#fix shading/filling upto Inf or similar
-#fix sci.notation, maybe rotate tick labels?
-#sort out hover over points and shaded area
+#fix layering/stacking of fill
 
 
 interactiveeafplot <- function(
@@ -31,27 +29,6 @@ interactiveeafplot <- function(
     ylabel =NULL,
     sci.notation=FALSE){
   
-  #Function to plot axis in scientific format
-  # scientific <- function(x){
-  #   ifelse(x==0, "0", parse(text=gsub("[+]", "", gsub("e", " %*% 10^", scientific_format()(x)))))
-  # }
-  
-  #CHECK x input
-  #table needs to be of size three columns
-  #needs to be data frame
-  if (ncol(x)!=3){
-    stop("Each element must have three columns")
-  }
-  if (is.data.frame(x)==FALSE){
-    stop("Each element must be of type data frame") 
-  }
-  
-  #CHECK sci.notation input
-  #If not Boolean output stop
-  # if (sci.notation != TRUE&FALSE){
-  #   stop("sci.notation must be a boolean value")
-  # }
-  
   if(length(maximise)==1){
     if (maximise==TRUE){
       maximise<-c(TRUE,TRUE)
@@ -64,9 +41,9 @@ interactiveeafplot <- function(
   eafdata<-as.data.frame(eaf(x,maximise = maximise,percentiles = percentiles))
   newdata2 <- eafdata
   newdata2<-arrange(newdata2,desc(newdata2[2]))
-  newdata2$V3[newdata2$V3==0] <- "Best"
-  newdata2$V3[newdata2$V3==50] <- "Median"
-  newdata2$V3[newdata2$V3==100] <- "Worst"
+  # newdata2$V3[newdata2$V3==0] <- "Best"
+  # newdata2$V3[newdata2$V3==50] <- "Median"
+  # newdata2$V3[newdata2$V3==100] <- "Worst"
   colnames(newdata2) <- c("Time","Best","Scenario")
   
   uniqueScenario <- unique(newdata2$Scenario)
@@ -144,10 +121,16 @@ interactiveeafplot <- function(
       }
       } +
     {if(psize!=0){
-      geom_point(size=psize,shape=pshape)
+      geom_point(size=psize,shape=pshape,
+                 aes(text= paste("Time: ", Time, "<br>", 
+                             "Best: ", Best, "<br>",
+                             "Percentile: ", Scenario,sep = "")))
     }}+
     theme_bw() +
     theme(legend.position = legend.pos)+
+    {if (sci.notation==TRUE){
+      theme(axis.text.x = element_text(angle = 90))
+    }}+
     {if (axes==FALSE){
           theme(axis.title = element_blank(),
           axis.text = element_blank(),
@@ -161,31 +144,29 @@ interactiveeafplot <- function(
       else {
         ylab(ylabel)}}
   
-  if (sci.notation==TRUE){
-    p<-p+scale_y_continuous(labels = scientific)
-    p<-p+scale_x_continuous(labels = scientific)}
-  
+  newdata3<-arrange(newdata3,desc(fill_color))
+  print(newdata3)
   if (type=="area"){
     if (all(maximise==c(TRUE,TRUE))){
       p<-p+
-        geom_rect(aes(xmin = next_Time, xmax = min(newdata2$Time), ymin = next_Best, ymax = min(newdata2$Best), fill = fill_color), alpha = 0.6,colour=NA)
+        geom_rect(aes(xmin = next_Time, xmax = .Machine$double.xmax *-1, ymin = Best, ymax = .Machine$double.xmax*-1, fill = fill_color), alpha = 0.6,colour=NA)
     }
     else if(all(maximise==c(FALSE,FALSE))){
       p<-p+
-        geom_rect(aes(xmin = Time, xmax = max(newdata2$Time), ymin =max(newdata2$Best),ymax=next_Best, fill = fill_color), alpha = 0.6,colour=NA)
+        geom_rect(aes(xmin = Time, xmax = .Machine$double.xmax, ymin =.Machine$double.xmax,ymax=next_Best, fill = fill_color), alpha = 0.6,colour=NA)
     }
     else if(all(maximise==c(TRUE,FALSE))){
       p<-p+
-        geom_rect(aes(xmin = next_Time, xmax = min(newdata2$Time), ymin = next_Best, ymax = max(newdata2$Best), fill = fill_color), alpha = 0.6,colour=NA)
+        geom_rect(aes(xmin = next_Time, xmax = .Machine$double.xmax*-1, ymin = Best, ymax = .Machine$double.xmax, fill = fill_color), alpha = 0.6,colour=NA)
     }
     else{
       p<-p+
-        geom_rect(aes(xmin = Time, xmax = max(newdata2$Time), ymin = next_Best, ymax = min(newdata2$Best), fill = fill_color), alpha = 0.6,colour=NA)
+        geom_rect(aes(xmin = Time, xmax = .Machine$double.xmax, ymin = next_Best, ymax = .Machine$double.xmax*-1, fill = fill_color), alpha = 0.6,colour=NA)
     }
   }
   
   
-  myplot<- ggplotly(p,dynamicTicks = TRUE)
+  myplot<- ggplotly(p,dynamicTicks = TRUE,tooltip = c("text"))
   
   for (i in 1:length(myplot$x$data)){
     if (!is.null(myplot$x$data[[i]]$name)){
@@ -231,45 +212,88 @@ interactiveeafplot <- function(
       layout(legend = list(orientation = "v",xanchor="right",yanchor="top", y = 0.99, x = 0.99))
   }}
   
-  myplot<-myplot %>%
-    layout(xaxis=list(side=xaxis.side),
-           yaxis = list(side=yaxis.side))
+  if (type=="area"){
+    myplot <- myplot %>%
+      layout(
+        xaxis = list(type='log',side = xaxis.side),
+        yaxis = list(type='log',side = yaxis.side)
+      )
+  }else{
+    myplot <- myplot %>%
+      layout(
+        xaxis = list(side = xaxis.side),
+        yaxis = list(side = yaxis.side)
+      )
+  }
+  if (sci.notation==TRUE){
+    myplot<-myplot %>%
+      layout(
+        xaxis = list(tickformat=".2e"),
+        yaxis = list(tickformat=".2e")
+      )
+  }
   
   return(myplot)
   }
 
 #Testing data
-# data(gcp2x2)
-# tabucol <- subset(gcp2x2, alg != "TSinN1")
-# tabucol$alg <- tabucol$alg[drop=TRUE]
-# data <- tabucol %>% filter(inst=="DSJC500.5")
-# mydata <- data[c("time","best","run")]
-# interactiveeafplot(mydata,
-#                    c(0,50,100),
-#                    col=c("yellow","red"),
-#                    maximise=FALSE,
-#                    type="point",
-#                    lty="longdash",
-#                    psize=3,
-#                    pshape=10,
-#                    legend.pos="topright",
-#                    xaxis.side="bottom",
-#                    yaxis.side="left",
-#                    axes=TRUE,
-#                    sci.notation=TRUE,
-#                    xlabel="MIN X",
-#                    ylabel="MIN Y")
-# interactiveeafplot(mydata,c(0,50,100), col=c("yellow","red"),maximise=TRUE,sci.notation = FALSE,xlab="MAX X",ylab="MAX Y")
-# interactiveeafplot(mydata,c(0,50,100), col=c("yellow","red"),maximise=c(FALSE,TRUE),sci.notation = FALSE,xlab="MIN X",ylab="MAX Y")
-# interactiveeafplot(mydata,c(0,50,100), col=c("yellow","red"),maximise=c(TRUE,FALSE),sci.notation = FALSE,xlab="MAX X",ylab="MIN Y")
+data(gcp2x2)
+tabucol <- subset(gcp2x2, alg != "TSinN1")
+tabucol$alg <- tabucol$alg[drop=TRUE]
+data <- tabucol %>% filter(inst=="DSJC500.5")
+mydata <- data[c("time","best","run")]
+
+interactiveeafplot(mydata, c(0,40,100), col=c("yellow","red"),
+                   maximise=FALSE, type="area", lty="longdash",
+                   psize=3, pshape=10, legend.pos="bottomleft",
+                   xaxis.side="top", yaxis.side="right", axes=TRUE,
+                   sci.notation=FALSE, xlabel="MIN X", ylabel="MIN Y")
+
+# interactiveeafplot(mydata, c(0,50,100), col=c("yellow","red"),
+#                    maximise=TRUE, type="area", lty="longdash",
+#                    psize=3, pshape=10, legend.pos="topright",
+#                    xaxis.side="bottom", yaxis.side="left", axes=TRUE,
+#                    sci.notation=TRUE, xlabel="MAX X", ylabel="MAX Y")
+# 
+# interactiveeafplot(mydata, c(0,50,100), col=c("yellow","red"),
+#                    maximise=c(FALSE,TRUE), type="area", lty="longdash",
+#                    psize=3, pshape=10, legend.pos="topleft",
+#                    xaxis.side="top", yaxis.side="left", axes=TRUE,
+#                    sci.notation=TRUE, xlabel="MIN X", ylabel="MAX Y")
+# 
+# interactiveeafplot(mydata, c(0,50,100), col=c("yellow","red"),
+#                    maximise=c(TRUE,FALSE), type="area", lty="longdash",
+#                    psize=3, pshape=10, legend.pos="bottomright",
+#                    xaxis.side="bottom", yaxis.side="right", axes=TRUE,
+#                    sci.notation=TRUE, xlabel="MAX X", ylabel="MIN Y")
 # 
 # data(SPEA2minstoptimeRichmond)
 # SPEA2minstoptimeRichmond[,2] <- SPEA2minstoptimeRichmond[,2] / 60
-# interactiveeafplot(SPEA2minstoptimeRichmond, col=c("yellow","red"), xlab = "C[E]",
-#          ylab = "Minimum idle time (minutes)", maximise = c(FALSE, FALSE))
-# interactiveeafplot(SPEA2minstoptimeRichmond, col=c("yellow","red"), xlab = "C[E]",
-#                    ylab = "Minimum idle time (minutes)", maximise = c(TRUE, TRUE))
-# interactiveeafplot(SPEA2minstoptimeRichmond, col=c("yellow","red"), xlab = "C[E]",
-#                   ylab = "Minimum idle time (minutes)", maximise = c(FALSE, TRUE))
-# interactiveeafplot(SPEA2minstoptimeRichmond, col=c("yellow","red"),sci.notation = TRUE, xlab = "C[E]",
-#                    ylab = "Minimum idle time (minutes)", maximise = c(TRUE, FALSE))
+# 
+# interactiveeafplot(SPEA2minstoptimeRichmond, c(0,50,100), col=c("yellow","red"),
+#                    maximise=FALSE, type="area", lty="longdash",
+#                    psize=3, pshape=10, legend.pos="bottomleft",
+#                    xaxis.side="top", yaxis.side="right", axes=TRUE,
+#                    sci.notation=TRUE, xlabel = "C[E]",
+#                    ylabel = "Minimum idle time (minutes)")
+# 
+# interactiveeafplot(SPEA2minstoptimeRichmond, c(0,50,100), col=c("yellow","red"),
+#                    maximise=TRUE, type="area", lty="longdash",
+#                    psize=3, pshape=10, legend.pos="topright",
+#                    xaxis.side="bottom", yaxis.side="left", axes=TRUE,
+#                    sci.notation=TRUE, xlabel = "C[E]",
+#                    ylabel = "Minimum idle time (minutes)")
+# 
+# interactiveeafplot(SPEA2minstoptimeRichmond, c(0,50,100), col=c("yellow","red"),
+#                    maximise=c(FALSE,TRUE), type="area", lty="longdash",
+#                    psize=3, pshape=10, legend.pos="topleft",
+#                    xaxis.side="top", yaxis.side="left", axes=TRUE,
+#                    sci.notation=TRUE, xlabel = "C[E]",
+#                    ylabel = "Minimum idle time (minutes)")
+# 
+# interactiveeafplot(SPEA2minstoptimeRichmond, c(0,50,100), col=c("yellow","red"),
+#                    maximise=c(TRUE,FALSE), type="area", lty="longdash",
+#                    psize=3, pshape=10, legend.pos="bottomright",
+#                    xaxis.side="bottom", yaxis.side="right", axes=TRUE,
+#                    sci.notation=TRUE, xlabel = "C[E]",
+#                    ylabel = "Minimum idle time (minutes)")
