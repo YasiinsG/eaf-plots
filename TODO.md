@@ -1,4 +1,4 @@
- - [ ] Interactive eafplot()
+ - [x] Interactive eafplot()
    - [x] Fix zoom
    - [x] Handle maximise parameter
    - [x] Handle type="area"
