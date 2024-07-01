@@ -45,6 +45,28 @@
 ## <ins>  Week 3 </ins> (W/B 24/6)
 
 **Monday**
+   - Morning: Meeting and troubleshooting some issues with the output of the program (4 hrs)
+   - Afternoon: Creating a colour scheme for the plots. (3 hrs)
+     
+ **Tuesday:**
+   - Morning: Analysing how to implement a filled infinite area. (3 hrs)
+   - Afternoon: Attempts to implement filled area (4 hrs)
+     
+ **Wednesday:**
+   - Morning: Attempts to implement filled area (3 hrs)
+   - Afternoon: Attempts to implement filled area (4 hrs)
+     
+ **Thursday:**
+   - Morning: Changed to log axis for filled area (4 hrs)
+   - Afternoon: Checking functionality of the program (3 hrs)
+     
+ **Friday:**
+   - Morning: Adding other features to the program such as axes and legend positioning. (3 hrs)
+   - Afternoon: Changing scientific notation and troubleshooting issues with 'Best','Median','Worst' labelling. (4 hrs)
+
+## <ins>  Week 4 </ins> (W/B 1/7)
+
+**Monday**
    - Morning: 
    - Afternoon: 
      
