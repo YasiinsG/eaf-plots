@@ -8,10 +8,6 @@ library(scales)
 library(tidyr)
 library(tidyverse)
 
-#things to do:
-#fix layering/stacking of fill
-
-
 interactiveeafplot <- function(
     x,
     percentiles=c(0,50,100),
@@ -39,12 +35,18 @@ interactiveeafplot <- function(
   }
   
   eafdata<-as.data.frame(eaf(x,maximise = maximise,percentiles = percentiles))
+  colnames(eafdata) <- c("Time","Best","Scenario")
+  
+  labels <- sapply(percentiles, function(pct) {
+    if (pct == 0) return("Best")
+    if (pct == 50) return("Median")
+    if (pct == 100) return("Worst")
+    return(paste0(pct, "%"))
+  })
+  
+  eafdata$Scenario <- factor(eafdata$Scenario, levels = percentiles, labels = labels)
   newdata2 <- eafdata
   newdata2<-arrange(newdata2,desc(newdata2[2]))
-  # newdata2$V3[newdata2$V3==0] <- "Best"
-  # newdata2$V3[newdata2$V3==50] <- "Median"
-  # newdata2$V3[newdata2$V3==100] <- "Worst"
-  colnames(newdata2) <- c("Time","Best","Scenario")
   
   uniqueScenario <- unique(newdata2$Scenario)
   
@@ -94,12 +96,12 @@ interactiveeafplot <- function(
   else{
     plotcol<-pal(length(uniqueScenario))
   }
-  
+
   newdata3 <- newdata3 %>%
-    group_by(as.character(Scenario)) %>%
-    mutate(next_Time = lead(Time, default = last(Time))) %>%
-    mutate(next_Best = lead(Best, default = last(Best))) %>%
-    mutate(fill_color = factor(Scenario))
+    group_by(Scenario) %>%
+    mutate(next_Time = lead(Time, default = last(Time)),
+           next_Best = lead(Best, default = last(Best))) %>%
+    ungroup()
   
   p <- ggplot(data = newdata3, aes(x=Time, y=Best, color=factor(Scenario))) +
     {if (any(c("white") %in% col)){
@@ -124,7 +126,7 @@ interactiveeafplot <- function(
       geom_point(size=psize,shape=pshape,
                  aes(text= paste("Time: ", Time, "<br>", 
                              "Best: ", Best, "<br>",
-                             "Percentile: ", Scenario,sep = "")))
+                             "Percentile: ", Scenario, sep = "")))
     }}+
     theme_bw() +
     theme(legend.position = legend.pos)+
@@ -144,24 +146,22 @@ interactiveeafplot <- function(
       else {
         ylab(ylabel)}}
   
-  newdata3<-arrange(newdata3,desc(fill_color))
-  print(newdata3)
   if (type=="area"){
     if (all(maximise==c(TRUE,TRUE))){
       p<-p+
-        geom_rect(aes(xmin = next_Time, xmax = .Machine$double.xmax *-1, ymin = Best, ymax = .Machine$double.xmax*-1, fill = fill_color), alpha = 0.6,colour=NA)
+        geom_rect(aes(xmin = next_Time, xmax = .Machine$double.xmax *-1, ymin = Best, ymax = .Machine$double.xmax*-1, fill = Scenario), alpha = 0.6,colour=NA)
     }
     else if(all(maximise==c(FALSE,FALSE))){
       p<-p+
-        geom_rect(aes(xmin = Time, xmax = .Machine$double.xmax, ymin =.Machine$double.xmax,ymax=next_Best, fill = fill_color), alpha = 0.6,colour=NA)
+        geom_rect(aes(xmin = Time, xmax = .Machine$double.xmax, ymin =.Machine$double.xmax,ymax=next_Best, fill = Scenario), alpha = 0.6,colour=NA)
     }
     else if(all(maximise==c(TRUE,FALSE))){
       p<-p+
-        geom_rect(aes(xmin = next_Time, xmax = .Machine$double.xmax*-1, ymin = Best, ymax = .Machine$double.xmax, fill = fill_color), alpha = 0.6,colour=NA)
+        geom_rect(aes(xmin = next_Time, xmax = .Machine$double.xmax*-1, ymin = Best, ymax = .Machine$double.xmax, fill = Scenario), alpha = 0.6,colour=NA)
     }
     else{
       p<-p+
-        geom_rect(aes(xmin = Time, xmax = .Machine$double.xmax, ymin = next_Best, ymax = .Machine$double.xmax*-1, fill = fill_color), alpha = 0.6,colour=NA)
+        geom_rect(aes(xmin = Time, xmax = .Machine$double.xmax, ymin = next_Best, ymax = .Machine$double.xmax*-1, fill = Scenario), alpha = 0.6,colour=NA)
     }
   }
   
@@ -243,57 +243,57 @@ tabucol$alg <- tabucol$alg[drop=TRUE]
 data <- tabucol %>% filter(inst=="DSJC500.5")
 mydata <- data[c("time","best","run")]
 
-interactiveeafplot(mydata, c(0,40,100), col=c("yellow","red"),
+interactiveeafplot(mydata, c(0,40,50,70,100), col=c("yellow","red"),
                    maximise=FALSE, type="area", lty="longdash",
                    psize=3, pshape=10, legend.pos="bottomleft",
-                   xaxis.side="top", yaxis.side="right", axes=TRUE,
+                   xaxis.side="bottom", yaxis.side="left", axes=TRUE,
                    sci.notation=FALSE, xlabel="MIN X", ylabel="MIN Y")
 
-# interactiveeafplot(mydata, c(0,50,100), col=c("yellow","red"),
-#                    maximise=TRUE, type="area", lty="longdash",
-#                    psize=3, pshape=10, legend.pos="topright",
-#                    xaxis.side="bottom", yaxis.side="left", axes=TRUE,
-#                    sci.notation=TRUE, xlabel="MAX X", ylabel="MAX Y")
-# 
-# interactiveeafplot(mydata, c(0,50,100), col=c("yellow","red"),
-#                    maximise=c(FALSE,TRUE), type="area", lty="longdash",
-#                    psize=3, pshape=10, legend.pos="topleft",
-#                    xaxis.side="top", yaxis.side="left", axes=TRUE,
-#                    sci.notation=TRUE, xlabel="MIN X", ylabel="MAX Y")
-# 
-# interactiveeafplot(mydata, c(0,50,100), col=c("yellow","red"),
-#                    maximise=c(TRUE,FALSE), type="area", lty="longdash",
-#                    psize=3, pshape=10, legend.pos="bottomright",
-#                    xaxis.side="bottom", yaxis.side="right", axes=TRUE,
-#                    sci.notation=TRUE, xlabel="MAX X", ylabel="MIN Y")
-# 
-# data(SPEA2minstoptimeRichmond)
-# SPEA2minstoptimeRichmond[,2] <- SPEA2minstoptimeRichmond[,2] / 60
-# 
-# interactiveeafplot(SPEA2minstoptimeRichmond, c(0,50,100), col=c("yellow","red"),
-#                    maximise=FALSE, type="area", lty="longdash",
-#                    psize=3, pshape=10, legend.pos="bottomleft",
-#                    xaxis.side="top", yaxis.side="right", axes=TRUE,
-#                    sci.notation=TRUE, xlabel = "C[E]",
-#                    ylabel = "Minimum idle time (minutes)")
-# 
-# interactiveeafplot(SPEA2minstoptimeRichmond, c(0,50,100), col=c("yellow","red"),
-#                    maximise=TRUE, type="area", lty="longdash",
-#                    psize=3, pshape=10, legend.pos="topright",
-#                    xaxis.side="bottom", yaxis.side="left", axes=TRUE,
-#                    sci.notation=TRUE, xlabel = "C[E]",
-#                    ylabel = "Minimum idle time (minutes)")
-# 
-# interactiveeafplot(SPEA2minstoptimeRichmond, c(0,50,100), col=c("yellow","red"),
-#                    maximise=c(FALSE,TRUE), type="area", lty="longdash",
-#                    psize=3, pshape=10, legend.pos="topleft",
-#                    xaxis.side="top", yaxis.side="left", axes=TRUE,
-#                    sci.notation=TRUE, xlabel = "C[E]",
-#                    ylabel = "Minimum idle time (minutes)")
-# 
-# interactiveeafplot(SPEA2minstoptimeRichmond, c(0,50,100), col=c("yellow","red"),
-#                    maximise=c(TRUE,FALSE), type="area", lty="longdash",
-#                    psize=3, pshape=10, legend.pos="bottomright",
-#                    xaxis.side="bottom", yaxis.side="right", axes=TRUE,
-#                    sci.notation=TRUE, xlabel = "C[E]",
-#                    ylabel = "Minimum idle time (minutes)")
+interactiveeafplot(mydata, c(0,40,50,70,100), col=c("yellow","red"),
+                   maximise=TRUE, type="area", lty="longdash",
+                   psize=3, pshape=10, legend.pos="topright",
+                   xaxis.side="top", yaxis.side="right", axes=TRUE,
+                   sci.notation=TRUE, xlabel="MAX X", ylabel="MAX Y")
+
+interactiveeafplot(mydata, c(0,40,50,70,100), col=c("yellow","red"),
+                   maximise=c(FALSE,TRUE), type="area", lty="longdash",
+                   psize=3, pshape=10, legend.pos="topleft",
+                   xaxis.side="top", yaxis.side="left", axes=TRUE,
+                   sci.notation=TRUE, xlabel="MIN X", ylabel="MAX Y")
+
+interactiveeafplot(mydata, c(0,40,50,70,100), col=c("yellow","red"),
+                   maximise=c(TRUE,FALSE), type="area", lty="longdash",
+                   psize=3, pshape=10, legend.pos="bottomright",
+                   xaxis.side="bottom", yaxis.side="right", axes=TRUE,
+                   sci.notation=TRUE, xlabel="MAX X", ylabel="MIN Y")
+
+data(SPEA2minstoptimeRichmond)
+SPEA2minstoptimeRichmond[,2] <- SPEA2minstoptimeRichmond[,2] / 60
+
+interactiveeafplot(SPEA2minstoptimeRichmond, percentiles = c(0,40,50,70,100),
+                   col=c("yellow","red"),maximise=FALSE, type="area",
+                   lty="longdash", psize=3, pshape=10, legend.pos="bottomleft",
+                   xaxis.side="bottom", yaxis.side="left", axes=TRUE,
+                   sci.notation=FALSE, xlabel = "C[E]",
+                   ylabel = "Minimum idle time (minutes)")
+
+interactiveeafplot(SPEA2minstoptimeRichmond, percentiles = c(0,40,50,70,100),
+                   col=c("yellow","red"), maximise=TRUE, type="area",
+                   lty="longdash", psize=3, pshape=10, legend.pos="topright",
+                   xaxis.side="top", yaxis.side="right", axes=TRUE,
+                   sci.notation=TRUE, xlabel = "C[E]",
+                   ylabel = "Minimum idle time (minutes)")
+
+interactiveeafplot(SPEA2minstoptimeRichmond, percentiles = c(0,40,50,70,100),
+                   col=c("yellow","red"), maximise=c(FALSE,TRUE), type="area",
+                   lty="longdash", psize=3, pshape=10, legend.pos="topleft",
+                   xaxis.side="top", yaxis.side="left", axes=TRUE,
+                   sci.notation=TRUE, xlabel = "C[E]",
+                   ylabel = "Minimum idle time (minutes)")
+
+interactiveeafplot(SPEA2minstoptimeRichmond, percentiles = c(0,40,50,70,100),
+                   col=c("yellow","red"), maximise=c(TRUE,FALSE), type="area",
+                   lty="longdash", psize=3, pshape=10, legend.pos="bottomright",
+                   xaxis.side="bottom", yaxis.side="right", axes=TRUE,
+                   sci.notation=TRUE, xlabel = "C[E]",
+                   ylabel = "Minimum idle time (minutes)")
