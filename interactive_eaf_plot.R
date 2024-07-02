@@ -103,7 +103,7 @@ interactiveeafplot <- function(
            next_Best = lead(Best, default = last(Best))) %>%
     ungroup()
   
-  p <- ggplot(data = newdata3, aes(x=Time, y=Best, color=factor(Scenario))) +
+  p <- ggplot(data = newdata3, aes(x=Time, y=Best, color=Scenario)) +
     {if (any(c("white") %in% col)){
       scale_color_manual(values = plotcol[plotcol != "#FFFFFF"])
     }
@@ -129,6 +129,8 @@ interactiveeafplot <- function(
                              "Percentile: ", Scenario, sep = "")))
     }}+
     theme_bw() +
+    scale_x_continuous(expand = c(0,0))+
+    scale_y_continuous(expand = c(0,0))+
     theme(legend.position = legend.pos)+
     {if (sci.notation==TRUE){
       theme(axis.text.x = element_text(angle = 90))
@@ -149,19 +151,19 @@ interactiveeafplot <- function(
   if (type=="area"){
     if (all(maximise==c(TRUE,TRUE))){
       p<-p+
-        geom_rect(aes(xmin = next_Time, xmax = .Machine$double.xmax *-1, ymin = Best, ymax = .Machine$double.xmax*-1, fill = Scenario), alpha = 0.6,colour=NA)
+        geom_rect(aes(xmin = next_Time, xmax = .Machine$integer.max *-1, ymin = Best, ymax = .Machine$integer.max*-1, fill = Scenario), alpha = 0.6,colour=NA)
     }
     else if(all(maximise==c(FALSE,FALSE))){
       p<-p+
-        geom_rect(aes(xmin = Time, xmax = .Machine$double.xmax, ymin =.Machine$double.xmax,ymax=next_Best, fill = Scenario), alpha = 0.6,colour=NA)
+        geom_rect(aes(xmin = Time, xmax = .Machine$integer.max, ymin =.Machine$integer.max,ymax=next_Best, fill = Scenario), alpha = 0.6,colour=NA)
     }
     else if(all(maximise==c(TRUE,FALSE))){
       p<-p+
-        geom_rect(aes(xmin = next_Time, xmax = .Machine$double.xmax*-1, ymin = Best, ymax = .Machine$double.xmax, fill = Scenario), alpha = 0.6,colour=NA)
+        geom_rect(aes(xmin = next_Time, xmax = .Machine$integer.max*-1, ymin = Best, ymax = .Machine$integer.max, fill = Scenario), alpha = 0.6,colour=NA)
     }
     else{
       p<-p+
-        geom_rect(aes(xmin = Time, xmax = .Machine$double.xmax, ymin = next_Best, ymax = .Machine$double.xmax*-1, fill = Scenario), alpha = 0.6,colour=NA)
+        geom_rect(aes(xmin = Time, xmax = .Machine$integer.max, ymin = next_Best, ymax = .Machine$integer.max*-1, fill = Scenario), alpha = 0.6,colour=NA)
     }
   }
   
@@ -213,10 +215,18 @@ interactiveeafplot <- function(
   }}
   
   if (type=="area"){
+  y_padding = (max(newdata2$Best)-min(newdata2$Best))/length(newdata2$Best)
+  min_y = min(newdata2$Best) - y_padding
+  max_y = max(newdata2$Best) + y_padding
+  
+  x_padding = (max(newdata2$Time)-min(newdata2$Time))/length(newdata2$Time)
+  min_x = min(newdata2$Time) - x_padding
+  max_x = max(newdata2$Time) + x_padding
+  
     myplot <- myplot %>%
       layout(
-        xaxis = list(type='log',side = xaxis.side),
-        yaxis = list(type='log',side = yaxis.side)
+        xaxis = list(autorange=FALSE,range=c(min_x,max_x),side = xaxis.side),
+        yaxis = list(autorange=FALSE,range=c(min_y,max_y),side = yaxis.side)
       )
   }else{
     myplot <- myplot %>%
