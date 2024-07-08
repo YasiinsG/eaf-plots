@@ -67,6 +67,28 @@
 ## <ins>  Week 4 </ins> (W/B 1/7)
 
 **Monday**
+   - Morning: Meeting and troubleshooting some issues. (4 hrs)
+   - Afternoon: Finished the plotly plot for the EAF plot (3 hrs)
+     
+ **Tuesday:**
+   - Morning: Started implementing the eafdiff plot (3 hrs)
+   - Afternoon: Plotted the best and worst attainment lines (4 hrs)
+     
+ **Wednesday:**
+   - Morning: plotted two separate plots of median case in A1 and A2 (4 hrs)
+   - Afternoon: formatting of plots (3 hrs)
+     
+ **Thursday:**
+   - Morning: Plotting area of plots (5 hrs)
+   - Afternoon: Plotting area of plots and troubleshooting legend. (2 hrs)
+     
+ **Friday:**
+   - Morning: Give the functionality to choose between ggplot and plotly (5 hrs)
+   - Afternoon: Started building a webpage for EAF plots in rmarkdown. (2 hrs)
+
+## <ins>  Week 5 </ins> (W/B 8/7)
+
+**Monday**
    - Morning: 
    - Afternoon: 
      
