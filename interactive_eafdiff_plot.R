@@ -10,7 +10,7 @@ library(tidyverse)
 library(ggpubr)
 library(stringr)
 
-interactiveeafplot <- function(
+interactiveeafdiffplot <- function(
     x,
     y,
     intervals=3,
@@ -692,5 +692,5 @@ interactiveeafplot <- function(
 extdata_dir <- system.file(package="moocore", "extdata")
 A1 <- read_datasets(file.path(extdata_dir, "ALG_1_dat.xz"))
 A2 <- read_datasets(file.path(extdata_dir, "ALG_2_dat.xz"))
-interactiveeafplot(x=A1,y=A2,maximise = FALSE,type = "area",legend.pos = "top",xlabel = "one",
+interactiveeafdiffplot(x=A1,y=A2,maximise = FALSE,type = "area",legend.pos = "top",xlabel = "one",
                    ylabel = "two",title=TRUE,title1="hi",title2="bye")
