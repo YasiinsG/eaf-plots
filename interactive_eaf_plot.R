@@ -231,11 +231,11 @@ interactiveeafplot <- function(
     }
       else if(legend.pos=="topleft"){
         myplot<-myplot%>%
-          layout(legend = list(orientation = "v",xanchor="left",yanchor="top", y = 0.99, x = 0.01))
+          layout(legend = list(orientation = "v",xanchor="left",yanchor="top", y = 0.99, x = 0.005))
       }
       else if(legend.pos=="bottomright"){
         myplot<-myplot%>%
-          layout(legend = list(orientation = "v",xanchor="right",yanchor="bottom", y = 0.01, x = 0.99))
+          layout(legend = list(orientation = "v",xanchor="right",yanchor="bottom", y = 0.01, x = 0.995))
       }
       else if(legend.pos=="bottom"){
         myplot<-myplot%>%
@@ -243,23 +243,23 @@ interactiveeafplot <- function(
       }
       else if(legend.pos=="bottomleft"){
         myplot<-myplot%>%
-          layout(legend = list(orientation = "v",xanchor="left",yanchor="bottom", y = 0.01, x = 0.01))
+          layout(legend = list(orientation = "v",xanchor="left",yanchor="bottom", y = 0.01, x = 0.005))
       }
       else if(legend.pos=="right"){
         myplot<-myplot%>%
-          layout(legend = list(orientation = "v",xanchor="right",yanchor="middle", y = 0.5, x = 0.99))
+          layout(legend = list(orientation = "v",xanchor="right",yanchor="middle", y = 0.5, x = 0.995))
       }
       else if(legend.pos=="left"){
         myplot<-myplot%>%
-          layout(legend = list(orientation = "v",xanchor="left",yanchor="middle", y = 0.5, x = 0.01))
+          layout(legend = list(orientation = "v",xanchor="left",yanchor="middle", y = 0.5, x = 0.005))
       }
       else if(legend.pos=="center"){
         myplot<-myplot%>%
-          layout(legend = list(orientation = "v",xanchor="center",yanchor="middle", y = 0.5, x = 0.5))
+          layout(legend = list(orientation = "v",xanchor="center",yanchor="middle", y = 0.5, x = 0.425))
       }
       else{
         myplot<-myplot%>%
-          layout(legend = list(orientation = "v",xanchor="right",yanchor="top", y = 0.99, x = 0.99))
+          layout(legend = list(orientation = "v",xanchor="right",yanchor="top", y = 0.99, x = 0.995))
       }}
   
     y_padding = (max(newdata2$Best)-min(newdata2$Best))/length(newdata2$Best)
@@ -299,18 +299,18 @@ interactiveeafplot <- function(
 #Testing data
 #run one example at a time
 
-# data(gcp2x2)
-# tabucol <- subset(gcp2x2, alg != "TSinN1")
-# tabucol$alg <- tabucol$alg[drop=TRUE]
-# data <- tabucol %>% filter(inst=="DSJC500.5")
-# mydata <- data[c("time","best","run")]
-#
-# interactiveeafplot(mydata, c(0,50,100), col=c("yellow","red"),
-#                    maximise=FALSE, type="area", lty="longdash",
-#                    psize=3, pshape=10, legend.pos="bottom",
-#                    xaxis.side="top", yaxis.side="left", axes=TRUE,
-#                    sci.notation=TRUE, xlabel="MIN X", ylabel="MIN Y",
-#                    plot="plotly")
+data(gcp2x2)
+tabucol <- subset(gcp2x2, alg != "TSinN1")
+tabucol$alg <- tabucol$alg[drop=TRUE]
+data <- tabucol %>% filter(inst=="DSJC500.5")
+mydata <- data[c("time","best","run")]
+
+interactiveeafplot(mydata, c(0,50,100), col=c("yellow","red"),
+                   maximise=FALSE, type="area", lty="longdash",
+                   psize=3, pshape=10, legend.pos="topright",
+                   xaxis.side="top", yaxis.side="left", axes=TRUE,
+                   sci.notation=TRUE, xlabel="MIN X", ylabel="MIN Y",
+                   plot="plotly")
 #
 # interactiveeafplot(mydata, c(0,50,100), col=c("yellow","red"),
 #                    maximise=TRUE, type="area", lty="longdash",
