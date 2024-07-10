@@ -9,29 +9,34 @@ library(tidyr)
 library(tidyverse)
 library(ggpubr)
 library(stringr)
+library(gridExtra)
+
+# eafdiffplot(
+#   full.eaf = FALSE,
+# )
+#sort out title
+#sort out ends of plots for ggplot
+#sort out sci notation and axis position for right plot in ggplot
 
 interactiveeafdiffplot <- function(
-    x,
-    y,
-    intervals=3,
-    percentiles=c(0,50,100),
+    data_left,
+    data_right,
+    intervals=5,
     maximise=FALSE,
-    col=c("white","black"),
+    grand.lines = TRUE,
+    col=c("white","#808080","black"),#change
     type="point",
     lty="solid",
     psize=0.1,
     pshape=16,
     legend.pos="topright",
-    xaxis.side="below",
-    yaxis.side="left",
-    axes=TRUE,
     xlabel=NULL,
     ylabel =NULL,
     sci.notation=FALSE,
     plot="plotly",
     title=FALSE,
-    title1="Data 1",
-    title2="Data 2"){
+    title_left="Data 1",
+    title_right="Data 2"){
   
   if(length(maximise)==1){
     if (maximise==TRUE){
@@ -42,22 +47,38 @@ interactiveeafdiffplot <- function(
     }
   }
   
-  #calculate intervals
-  # Define parameters
+  #set line step type
+  if (all(maximise == c(TRUE, TRUE))) {
+    dir<-"vh"
+  } else if (all(maximise == c(FALSE, FALSE))) {
+    dir<-"hv"
+  } else if (all(maximise == c(TRUE, FALSE))) {
+    dir<-"vh"
+  } else {
+    dir<-"hv"
+  }
+  
+  if (plot=="plotly"){
+    limvar <- .Machine$double.xmax
+    limvarfill <- 1e25
+  }else{
+    limvar <- Inf
+    limvarfill <- Inf
+  }
+  
+  #define intervals and percentiles for data and legend.
+  x<-data_left
+  y<-data_right
   start <- 0
   end <- 100
   interval_width <- 100/intervals
-  # Generate the intervals
   intervals <- seq(0, 1, by = interval_width/100)
-  # Original sapply function
   interval_labels <- sapply(seq_along(intervals[-length(intervals)]), function(i) {
     paste0("[", round(intervals[i], 5), ", ", round(intervals[i + 1], 5), ")")
   })
-
-  # Adjusted sapply function
+  
   interval_labels <- sapply(seq_along(intervals[-length(intervals)]), function(i) {
     if (i == length(intervals) - 1) {
-      # For the last interval, use [80, 100] instead of [80, 100)
       paste0("[", round(intervals[i], 5), ", ", round(intervals[i + 1], 5), "]")
     } else {
       paste0("[", round(intervals[i], 5), ", ", round(intervals[i + 1], 5), ")")
@@ -67,10 +88,9 @@ interactiveeafdiffplot <- function(
   lower_bounds <- seq(from = start, to = end, by = interval_width)
   lower_bounds <- lower_bounds[-length(intervals)]
   
-  #50% of x and y
+  # get eaf data
   eafdata <- as.data.frame(eaf(x, maximise = maximise, percentiles = c(lower_bounds)))
   eafdata2 <- as.data.frame(eaf(y, maximise=maximise, percentiles = c(lower_bounds)))
-  #0 and 100% of joint
   joint <- rbind_datasets(x, y)
   eafdatajoint <- as.data.frame(eaf(joint, maximise = maximise))
   eafdatajoint1 <- eafdatajoint %>%
@@ -80,15 +100,10 @@ interactiveeafdiffplot <- function(
   eafdata50 <- as.data.frame(eaf(x, maximise = maximise, percentiles = 50))
   eafdata250 <- as.data.frame(eaf(y, maximise = maximise, percentiles = 50))
   
-  
-  
-  #make 2 datasets for 2 facet plots
-  # percentiles<-c(min(eafdatajoint$V3),50,max(eafdatajoint$V3))
-  # dataset1 <- rbind(eafdatajoint,eafdata)
-  # dataset2 <- rbind(eafdatajoint,eafdata2)
   dataset1<- eafdata
   dataset2<-eafdata2
   
+  # set column names
   colnames(dataset1) <- c("Time","Best","Scenario")
   colnames(dataset2) <- c("Time","Best","Scenario")
   colnames(eafdatajoint1) <- c("Time","Best","Scenario")
@@ -96,18 +111,7 @@ interactiveeafdiffplot <- function(
   colnames(eafdata50) <- c("Time","Best","Scenario")
   colnames(eafdata250) <- c("Time","Best","Scenario")
   
-  
-  # 
-  # # Ensure Scenario is a factor
-  # dataset1$Scenario <- as.factor(dataset1$Scenario)
-  # dataset2$Scenario <- as.factor(dataset2$Scenario)
-  # eafdatajoint1$Scenario <- as.factor(eafdatajoint1$Scenario)
-  # eafdatajoint2$Scenario <- as.factor(eafdatajoint2$Scenario)
-  # eafdata50$Scenario <- as.factor(eafdata50$Scenario)
-  # eafdata250$Scenario <- as.factor(eafdata250$Scenario)
-  
-  print(lower_bounds)
-  print(interval_labels)
+  #relabel intervals
   dataset1$Scenario <- factor(dataset1$Scenario, levels = lower_bounds, labels = interval_labels)
   dataset2$Scenario <- factor(dataset2$Scenario, levels = lower_bounds, labels = interval_labels)
   eafdatajoint1$Scenario <- factor(eafdatajoint1$Scenario, levels = lower_bounds, labels = interval_labels)
@@ -115,209 +119,69 @@ interactiveeafdiffplot <- function(
   eafdata50$Scenario <- factor(eafdata50$Scenario, levels = lower_bounds, labels = interval_labels)
   eafdata250$Scenario <- factor(eafdata250$Scenario, levels = lower_bounds, labels = interval_labels)
   
-  #extend grand lines
-  uniqueScenario <- unique(eafdatajoint1$Scenario)
-  uniqueScenario2 <- unique(eafdatajoint2$Scenario)
-  uniqueScenario3 <- unique(eafdata50$Scenario)
-  uniqueScenario4 <- unique(eafdata250$Scenario)
-  
-  datalist=list()
-  datalist2=list()
-  i=1
-  for (a in uniqueScenario){
-    uniqueData <- eafdatajoint1 %>% filter(Scenario %in% a)
-    firstDataElement <- head(uniqueData,n=1)
-    lastDataElement <- tail(uniqueData,n=1)
-    datalist[[i]]<- firstDataElement
-    datalist2[[i]]<-lastDataElement
-    i <- i+1
-  }
-  big_data = data.frame(do.call(rbind, datalist))
-  big_data2 = data.frame(do.call(rbind, datalist2))
-  
-  if (all(maximise==c(TRUE,TRUE))){
-    big_data$Time <- .Machine$double.xmax*-1
-    big_data2$Best <- .Machine$double.xmax*-1}
-  else if(all(maximise==c(FALSE,FALSE))){
-    big_data$Best <- .Machine$double.xmax
-    big_data2$Time <- .Machine$double.xmax}
-  else if(all(maximise==c(TRUE,FALSE))){
-    big_data$Best <- .Machine$double.xmax
-    big_data2$Time <- .Machine$double.xmax*-1}
-  else{
-    big_data$Time <- .Machine$double.xmax
-    big_data2$Best <- .Machine$double.xmax*-1}
-  
-  big_data3 <- rbind(big_data2,big_data)
-  eafdatajoint1<- rbind(eafdatajoint1,big_data3)
-  
-  datalist=list()
-  datalist2=list()
-  i=1
-  for (a in uniqueScenario2){
-    uniqueData <- eafdatajoint2 %>% filter(Scenario %in% a)
-    firstDataElement <- head(uniqueData,n=1)
-    lastDataElement <- tail(uniqueData,n=1)
-    datalist[[i]]<- firstDataElement
-    datalist2[[i]]<-lastDataElement
-    i <- i+1
-  }
-  
-  big_data = data.frame(do.call(rbind, datalist))
-  big_data2 = data.frame(do.call(rbind, datalist2))
-  
-  if (all(maximise==c(TRUE,TRUE))){
-    big_data$Time <- .Machine$double.xmax*-1
-    big_data2$Best <- .Machine$double.xmax*-1}
-  else if(all(maximise==c(FALSE,FALSE))){
-    big_data$Best <- .Machine$double.xmax
-    big_data2$Time <- .Machine$double.xmax}
-  else if(all(maximise==c(TRUE,FALSE))){
-    big_data$Best <- .Machine$double.xmax
-    big_data2$Time <- .Machine$double.xmax*-1}
-  else{
-    big_data$Time <- .Machine$double.xmax
-    big_data2$Best <- .Machine$double.xmax*-1}
-  
-  big_data3 <- rbind(big_data2,big_data)
-  eafdatajoint2<- rbind(eafdatajoint2,big_data3)
-  
-  datalist=list()
-  datalist2=list()
-  i=1
-  for (a in uniqueScenario3){
-    uniqueData <- eafdata50 %>% filter(Scenario %in% a)
-    firstDataElement <- head(uniqueData,n=1)
-    lastDataElement <- tail(uniqueData,n=1)
-    datalist[[i]]<- firstDataElement
-    datalist2[[i]]<-lastDataElement
-    i <- i+1
-  }
-  
-  big_data = data.frame(do.call(rbind, datalist))
-  big_data2 = data.frame(do.call(rbind, datalist2))
-  
-  if (all(maximise==c(TRUE,TRUE))){
-    big_data$Time <- .Machine$double.xmax*-1
-    big_data2$Best <- .Machine$double.xmax*-1}
-  else if(all(maximise==c(FALSE,FALSE))){
-    big_data$Best <- .Machine$double.xmax
-    big_data2$Time <- .Machine$double.xmax}
-  else if(all(maximise==c(TRUE,FALSE))){
-    big_data$Best <- .Machine$double.xmax
-    big_data2$Time <- .Machine$double.xmax*-1}
-  else{
-    big_data$Time <- .Machine$double.xmax
-    big_data2$Best <- .Machine$double.xmax*-1}
-  
-  big_data3 <- rbind(big_data2,big_data)
-  eafdata50<- rbind(eafdata50,big_data3)
-  
-  datalist=list()
-  datalist2=list()
-  i=1
-  for (a in uniqueScenario4){
-    uniqueData <- eafdata250 %>% filter(Scenario %in% a)
-    firstDataElement <- head(uniqueData,n=1)
-    lastDataElement <- tail(uniqueData,n=1)
-    datalist[[i]]<- firstDataElement
-    datalist2[[i]]<-lastDataElement
-    i <- i+1
-  }
-  
-  big_data = data.frame(do.call(rbind, datalist))
-  big_data2 = data.frame(do.call(rbind, datalist2))
-  
-  if (all(maximise==c(TRUE,TRUE))){
-    big_data$Time <- .Machine$double.xmax*-1
-    big_data2$Best <- .Machine$double.xmax*-1}
-  else if(all(maximise==c(FALSE,FALSE))){
-    big_data$Best <- .Machine$double.xmax
-    big_data2$Time <- .Machine$double.xmax}
-  else if(all(maximise==c(TRUE,FALSE))){
-    big_data$Best <- .Machine$double.xmax
-    big_data2$Time <- .Machine$double.xmax*-1}
-  else{
-    big_data$Time <- .Machine$double.xmax
-    big_data2$Best <- .Machine$double.xmax*-1}
-  
-  big_data3 <- rbind(big_data2,big_data)
-  eafdata250<- rbind(eafdata250,big_data3)
-  
-  # labels <- sapply(percentiles, function(pct) {
-  #   if (pct == 0) return("Best")
-  #   if (pct == 50) return("Median")
-  #   if (pct == 100) return("Worst")
-  #   return(paste0(pct, "%"))
-  # })
-  # 
-  # dataset1$Scenario <- factor(dataset1$Scenario, levels = percentiles, labels = labels)
-  # dataset2$Scenario <- factor(dataset2$Scenario, levels = percentiles, labels = labels)
-  # 
   newdata2 <- dataset1
   newdata22 <- dataset2
-  #newdata2<-arrange(newdata2,desc(newdata2[2]))
   
+  # Function to extend plot percentiles and lines to large values.
+  process_data <- function(eafdata, uniqueScenario) {
+    datalist <- list()
+    datalist2 <- list()
+    i <- 1
+    
+    for (a in uniqueScenario) {
+      uniqueData <- eafdata %>% filter(Scenario %in% a)
+      datalist[[i]] <- head(uniqueData, n = 1)
+      datalist2[[i]] <- tail(uniqueData, n = 1)
+      i <- i + 1
+    }
+    
+    big_data <- data.frame(do.call(rbind, datalist))
+    big_data2 <- data.frame(do.call(rbind, datalist2))
+    
+    if (all(maximise == c(TRUE, TRUE))) {
+      big_data$Best <- limvar * -1
+      big_data2$Time <- limvar * -1
+    } else if (all(maximise == c(FALSE, FALSE))) {
+      big_data$Best <- limvar
+      big_data2$Time <- limvar
+    } else if (all(maximise == c(TRUE, FALSE))) {
+      big_data$Best <- limvar
+      big_data2$Time <- limvar * -1
+    } else {
+      big_data$Best <- limvar *-1
+      big_data2$Time <- limvar 
+    }
+    
+    big_data3 <- rbind(big_data2, big_data)
+    rbind(eafdata, big_data3)
+  }
+  
+  #get extended plot lines for p1
   uniqueScenario <- unique(newdata2$Scenario)
-  uniqueScenario2 <- unique(newdata22$Scenario)
+  newdata3 <- process_data(newdata2, uniqueScenario)
+  if (plot=="plotly"){
+    if (all(maximise == c(FALSE,TRUE))) {
+      newdata3<-arrange(newdata3,newdata3$Best)
+    }
+    else if (all(maximise == c(TRUE, FALSE))){
+      newdata3<-arrange(newdata3,desc(newdata3$Time))
+    }
+    }
   
-  datalist=list()
-  datalist2=list()
-  i=1
-  for (a in uniqueScenario){
-    uniqueData <- newdata2 %>% filter(Scenario %in% a)
-    firstDataElement <- head(uniqueData,n=1)
-    lastDataElement <- tail(uniqueData,n=1)
-    datalist[[i]]<- firstDataElement
-    datalist2[[i]]<-lastDataElement
-    i <- i+1
-  }
-  big_data = data.frame(do.call(rbind, datalist))
-  big_data2 = data.frame(do.call(rbind, datalist2))
-  
-  if (all(maximise==c(TRUE,TRUE))){
-    big_data$Time <- .Machine$double.xmax*-1
-    big_data2$Best <- .Machine$double.xmax*-1}
-  else if(all(maximise==c(FALSE,FALSE))){
-    big_data$Best <- .Machine$double.xmax
-    big_data2$Time <- .Machine$double.xmax}
-  else if(all(maximise==c(TRUE,FALSE))){
-    big_data$Best <- .Machine$double.xmax
-    big_data2$Time <- .Machine$double.xmax*-1}
-  else{
-    big_data$Time <- .Machine$double.xmax
-    big_data2$Best <- .Machine$double.xmax*-1}
-  
-  big_data3 <- rbind(big_data2,big_data)
-  newdata3<- rbind(newdata2,big_data3)
-  
-  if(all(maximise==c(TRUE,FALSE))){
-    newdata3<-arrange(newdata3,newdata3$Best)
-  }
-  else if(all(maximise==c(FALSE,TRUE))){
-    newdata3<-arrange(newdata3,newdata3$Best)
-  }
-  else{
-    newdata3<-arrange(newdata3,desc(newdata3$Best))}
-  
+  #set colours
   pal<-colorRampPalette(colors=col,space="Lab")
-  # if (any(c("white") %in% col)){
-  #   plotcol<-pal(length(uniqueScenario)+1)
-  # }
-  # else{
-  #   plotcol<-pal(length(uniqueScenario))
-  # }
-  col[col %in% c("white", "#FFFFFF")] <- "transparent"
   plotcol<-pal(length(uniqueScenario))
+  plotcol[1]<- "transparent"
   plotcol[plotcol %in% c("white", "#FFFFFF")] <- "transparent"
-  print(plotcol)
   
+  # change data
   newdata3 <- newdata3 %>%
     group_by(Scenario) %>%
     mutate(next_Time = lead(Time, default = last(Time)),
            next_Best = lead(Best, default = last(Best))) %>%
     ungroup()
   
+  #plot p1
   p1 <- ggplot(data = newdata3, aes(x=Time, y=Best, color=Scenario)) +
     {if (any(c("white") %in% col)){
       scale_color_manual(values = plotcol[plotcol != "#FFFFFF"])
@@ -327,7 +191,7 @@ interactiveeafdiffplot <- function(
       }
     } +
     labs(color = NULL) +
-    geom_step(direction = "hv",linetype=lty) +
+    geom_step(direction = dir,linetype=lty) +
     {if(type=="area"){
       if (any(c("white") %in% col)){
         scale_fill_manual(values = plotcol[plotcol != "#FFFFFF"],name="")
@@ -348,10 +212,6 @@ interactiveeafdiffplot <- function(
     {if (sci.notation==TRUE){
       theme(axis.text.x = element_text(angle = 90))
     }}+
-    {if (axes==FALSE){
-      theme(axis.title = element_blank(),
-            axis.text = element_blank(),
-            axis.ticks = element_blank())}}+
     {if (is.null(xlabel)){
       xlab(colnames(newdata3)[1])}
       else {
@@ -361,107 +221,27 @@ interactiveeafdiffplot <- function(
       else {
         ylab(ylabel)}}
   
-  if (type=="area"){
-    if (all(maximise==c(TRUE,TRUE))){
-      p1<-p1+
-        geom_rect(aes(xmin = Time, xmax = .Machine$integer.max *-1, ymin = Best, ymax = .Machine$integer.max*-1, fill = Scenario), alpha = 0.6,colour=NA)
+  #get extended plot lines for p2
+  uniqueScenario2 <- unique(newdata22$Scenario)
+  newdata4 <- process_data(newdata22, uniqueScenario2)
+  if (plot=="plotly"){
+    if (all(maximise == c(FALSE,TRUE))) {
+      newdata4<-arrange(newdata4,newdata4$Best)
     }
-    else if(all(maximise==c(FALSE,FALSE))){
-      #p<-p+
-      #  geom_rect(aes(xmin = Time, xmax = .Machine$integer.max, ymin =.Machine$integer.max,ymax=next_Best, fill = Scenario), alpha = 0.6,colour=NA)
-      p1<-p1+
-        geom_rect(aes(xmin = Time, xmax = 1e25, ymin =1e25,ymax=Best, fill = Scenario), alpha = 0.6,colour=NA)
-      
-      
+    else if (all(maximise == c(TRUE, FALSE))){
+      newdata4<-arrange(newdata4,desc(newdata4$Time))
     }
-    else if(all(maximise==c(TRUE,FALSE))){
-      p1<-p1+
-        geom_rect(aes(xmin = Time, xmax = .Machine$integer.max*-1, ymin = Best, ymax = .Machine$integer.max, fill = Scenario), alpha = 0.6,colour=NA)
     }
-    else{
-      p1<-p1+
-        geom_rect(aes(xmin = Time, xmax = .Machine$integer.max, ymin = next_Best, ymax = .Machine$integer.max*-1, fill = Scenario), alpha = 0.6,colour=NA)
-    }
-  }
   
-  p1<-p1+
-    geom_step(data = eafdatajoint1,aes(x=Time,y=Best),color= "black")+
-    {if(psize!=0){
-      geom_point(data = eafdatajoint1,stroke=0,color="black",size=psize,shape=pshape,
-                 aes(text= paste("Objective 1: ", Time, "<br>",
-                                 "Objective 2: ", Best, "<br>",
-                                 "Percentile: ", "Grand Worst", sep = "")))}}+
-    
-    geom_step(data = eafdatajoint2,aes(x=Time,y=Best),color= "white")+
-      {if(psize!=0){
-        geom_point(data = eafdatajoint2,stroke=0,color="white",size=psize,shape=pshape,
-                   aes(text= paste("Objective 1: ", Time, "<br>",
-                                   "Objective 2: ", Best, "<br>",
-                                   "Percentile: ", "Grand Best", sep = "")))}}+
-    
-    geom_step(data = eafdata50,aes(x=Time,y=Best),color= "black",linetype="dashed")+
-      {if(psize!=0){
-        geom_point(data = eafdata50,stroke=0,color="black",size=psize,shape=pshape,
-                   aes(text= paste("Objective 1: ", Time, "<br>",
-                                   "Objective 2: ", Best, "<br>",
-                                   "Percentile: ", 50, sep = "")))}}
-  
-  datalist=list()
-  datalist2=list()
-  i=1
-  for (a in uniqueScenario2){
-    uniqueData <- newdata22 %>% filter(Scenario %in% a)
-    firstDataElement <- head(uniqueData,n=1)
-    lastDataElement <- tail(uniqueData,n=1)
-    datalist[[i]]<- firstDataElement
-    datalist2[[i]]<-lastDataElement
-    i <- i+1
-  }
-  big_data = data.frame(do.call(rbind, datalist))
-  big_data2 = data.frame(do.call(rbind, datalist2))
-  
-  if (all(maximise==c(TRUE,TRUE))){
-    big_data$Time <- .Machine$double.xmax*-1
-    big_data2$Best <- .Machine$double.xmax*-1}
-  else if(all(maximise==c(FALSE,FALSE))){
-    big_data$Best <- .Machine$double.xmax
-    big_data2$Time <- .Machine$double.xmax}
-  else if(all(maximise==c(TRUE,FALSE))){
-    big_data$Best <- .Machine$double.xmax
-    big_data2$Time <- .Machine$double.xmax*-1}
-  else{
-    big_data$Time <- .Machine$double.xmax
-    big_data2$Best <- .Machine$double.xmax*-1}
-  big_data3 <- rbind(big_data2,big_data)
-  newdata3<- rbind(newdata22,big_data3)
-  
-  if(all(maximise==c(TRUE,FALSE))){
-    newdata3<-arrange(newdata3,newdata3$Best)
-  }
-  else if(all(maximise==c(FALSE,TRUE))){
-    newdata3<-arrange(newdata3,newdata3$Best)
-  }
-  else{
-    newdata3<-arrange(newdata3,desc(newdata3$Best))}
-  
-  pal<-colorRampPalette(colors=col,space="Lab")
-  # if (any(c("white") %in% col)){
-  #   plotcol<-pal(length(uniqueScenario2)+1)
-  # }
-  # else{
-  #   plotcol<-pal(length(uniqueScenario2))
-  # }
-  col[col %in% c("white", "#FFFFFF")] <- "transparent"
-  plotcol<-pal(length(uniqueScenario2))
-  plotcol[plotcol %in% c("white", "#FFFFFF")] <- "transparent"
-  
-  newdata3 <- newdata3 %>%
+  # change data
+  newdata4 <- newdata4 %>%
     group_by(Scenario) %>%
     mutate(next_Time = lead(Time, default = last(Time)),
            next_Best = lead(Best, default = last(Best))) %>%
     ungroup()
   
-  p2 <- ggplot(data = newdata3, aes(x=Time, y=Best, color=Scenario)) +
+  #plot p2
+  p2 <- ggplot(data = newdata4, aes(x=Time, y=Best, color=Scenario)) +
     {if (any(c("white") %in% col)){
       scale_color_manual(values = plotcol[plotcol != "#FFFFFF"])
     }
@@ -470,7 +250,7 @@ interactiveeafdiffplot <- function(
       }
     } +
     labs(color = NULL) +
-    geom_step(direction = "hv",linetype=lty) +
+    geom_step(direction = dir,linetype=lty) +
     {if(type=="area"){
       if (any(c("white") %in% col)){
         scale_fill_manual(values = plotcol[plotcol != "#FFFFFF"],name="")
@@ -491,10 +271,6 @@ interactiveeafdiffplot <- function(
     {if (sci.notation==TRUE){
       theme(axis.text.x = element_text(angle = 90))
     }}+
-    {if (axes==FALSE){
-      theme(axis.title = element_blank(),
-            axis.text = element_blank(),
-            axis.ticks = element_blank())}}+
     {if (is.null(xlabel)){
       xlab(colnames(newdata3)[1])}
       else {
@@ -504,105 +280,212 @@ interactiveeafdiffplot <- function(
       else {
         ylab(ylabel)}}
   
+  #If plotting area
   if (type=="area"){
     if (all(maximise==c(TRUE,TRUE))){
       p2<-p2+
-        geom_rect(aes(xmin = Time, xmax = .Machine$integer.max *-1, ymin = Best, ymax = .Machine$integer.max*-1, fill = Scenario), alpha = 0.6,colour=NA)
+        geom_rect(aes(xmin = Time, xmax = limvarfill*-1 , ymin = Best, ymax = limvarfill*-1, fill = Scenario), colour=NA)
+      p1<-p1+
+        geom_rect(aes(xmin = Time, xmax = limvarfill*-1 , ymin = Best, ymax = limvarfill*-1, fill = Scenario), colour=NA)
     }
     else if(all(maximise==c(FALSE,FALSE))){
-      #p<-p+
-      #  geom_rect(aes(xmin = Time, xmax = .Machine$integer.max, ymin =.Machine$integer.max,ymax=next_Best, fill = Scenario), alpha = 0.6,colour=NA)
       p2<-p2+
-        geom_rect(aes(xmin = Time, xmax = 1e25, ymin =1e25,ymax=Best, fill = Scenario), alpha = 0.6,colour=NA)
-      
-      
+        geom_rect(aes(xmin = Time, xmax = limvarfill, ymin =limvarfill,ymax=Best, fill = Scenario), colour=NA)
+      p1<-p1+
+        geom_rect(aes(xmin = Time, xmax = limvarfill, ymin =limvarfill,ymax=Best, fill = Scenario), colour=NA)
     }
     else if(all(maximise==c(TRUE,FALSE))){
       p2<-p2+
-        geom_rect(aes(xmin = Time, xmax = .Machine$integer.max*-1, ymin = Best, ymax = .Machine$integer.max, fill = Scenario), alpha = 0.6,colour=NA)
+        geom_rect(aes(xmin = Time, xmax = limvarfill*-1, ymin = Best, ymax = limvarfill, fill = Scenario),colour=NA)
+      p1<-p1+
+        geom_rect(aes(xmin = Time, xmax = limvarfill*-1, ymin = Best, ymax = limvarfill, fill = Scenario),colour=NA)
     }
     else{
       p2<-p2+
-        geom_rect(aes(xmin = Time, xmax = .Machine$integer.max, ymin = next_Best, ymax = .Machine$integer.max*-1, fill = Scenario), alpha = 0.6,colour=NA)
+        geom_rect(aes(xmin = next_Time, xmax = limvarfill, ymin = next_Best, ymax = limvarfill*-1, fill = Scenario),colour=NA)
+      p1<-p1+
+        geom_rect(aes(xmin = next_Time, xmax = limvarfill, ymin = next_Best, ymax = limvarfill*-1, fill = Scenario),colour=NA)
     }
   }
   
-  p2<-p2+
-    geom_step(data = eafdatajoint1,aes(x=Time,y=Best),color= "black") +
-    {if(psize!=0){
-      geom_point(data = eafdatajoint1,stroke=0,color="black",size=psize,shape=pshape,
-                 aes(text= paste("Objective 1: ", Time, "<br>",
-                                 "Objective 2: ", Best, "<br>",
-                                 "Percentile: ", "Grand Worst", sep = "")))}}+
+  #if plotting grand lines
+  if (grand.lines == TRUE) {
+    uniqueScenarios <- list(
+      unique(eafdatajoint1$Scenario),
+      unique(eafdatajoint2$Scenario),
+      unique(eafdata50$Scenario),
+      unique(eafdata250$Scenario)
+    )
     
-    geom_step(data = eafdatajoint2,aes(x=Time,y=Best),color= "white")+
+    eafdatajoint1 <- process_data(eafdatajoint1, uniqueScenarios[[1]])
+    eafdatajoint2 <- process_data(eafdatajoint2, uniqueScenarios[[2]])
+    eafdata50 <- process_data(eafdata50, uniqueScenarios[[3]])
+    eafdata250 <- process_data(eafdata250, uniqueScenarios[[4]])
+    if (all(maximise == c(FALSE, TRUE))) {
+      eafdatajoint1<-arrange(eafdatajoint1,eafdatajoint1$Best)
+      eafdatajoint2<-arrange(eafdatajoint2,eafdatajoint2$Best)
+      eafdata50<-arrange(eafdata50,eafdata50$Best)
+      eafdata250<-arrange(eafdata250,eafdata250$Best)
+    }
+    else if (all(maximise == c(TRUE, FALSE))){
+      eafdatajoint1<-arrange(eafdatajoint1,desc(eafdatajoint1$Time))
+      eafdatajoint2<-arrange(eafdatajoint2,desc(eafdatajoint2$Time))
+      eafdata50<-arrange(eafdata50,desc(eafdata50$Time))
+      eafdata250<-arrange(eafdata250,desc(eafdata250$Time))
+    }
+    
+    p1<-p1+
+      geom_step(data = eafdatajoint1,aes(x=Time,y=Best),color= "black",lwd=0.25,direction = dir)+
+      {if(psize!=0){
+        geom_point(data = eafdatajoint1,stroke=0,color="black",size=psize,shape=pshape,
+                   aes(text= paste("Objective 1: ", Time, "<br>",
+                                   "Objective 2: ", Best, "<br>",
+                                   "Percentile: ", "Grand Worst", sep = "")))}}+
+      
+      geom_step(data = eafdatajoint2,aes(x=Time,y=Best),color= "white",lwd=0.25,direction = dir)+
       {if(psize!=0){
         geom_point(data = eafdatajoint2,stroke=0,color="white",size=psize,shape=pshape,
                    aes(text= paste("Objective 1: ", Time, "<br>",
                                    "Objective 2: ", Best, "<br>",
                                    "Percentile: ", "Grand Best", sep = "")))}}+
+      
+      geom_step(data = eafdata50,aes(x=Time,y=Best),color= "black",linetype="dotted",lwd=0.25,direction = dir)+
+      {if(psize!=0){
+        geom_point(data = eafdata50,stroke=0,color="black",size=psize,shape=pshape,
+                   aes(text= paste("Objective 1: ", Time, "<br>",
+                                   "Objective 2: ", Best, "<br>",
+                                   "Percentile: ", 0.5, sep = "")))}}
     
-    geom_step(data = eafdata250,aes(x=Time,y=Best),color= "black",linetype="dashed")+
+    p2<-p2+
+      geom_step(data = eafdatajoint1,aes(x=Time,y=Best),color= "black",lwd=0.25,direction = dir) +
+      {if(psize!=0){
+        geom_point(data = eafdatajoint1,stroke=0,color="black",size=psize,shape=pshape,
+                   aes(text= paste("Objective 1: ", Time, "<br>",
+                                   "Objective 2: ", Best, "<br>",
+                                   "Percentile: ", "Grand Worst", sep = "")))}}+
+      
+      geom_step(data = eafdatajoint2,aes(x=Time,y=Best),color= "white",lwd=0.25,direction = dir)+
+      {if(psize!=0){
+        geom_point(data = eafdatajoint2,stroke=0,color="white",size=psize,shape=pshape,
+                   aes(text= paste("Objective 1: ", Time, "<br>",
+                                   "Objective 2: ", Best, "<br>",
+                                   "Percentile: ", "Grand Best", sep = "")))}}+
+      
+      geom_step(data = eafdata250,aes(x=Time,y=Best),color= "black",linetype="dotted",lwd=0.25,direction = dir)+
       {if(psize!=0){
         geom_point(data = eafdata250,stroke=0,color="black",size=psize,shape=pshape,
                    aes(text= paste("Objective 1: ", Time, "<br>",
                                    "Objective 2: ", Best, "<br>",
-                                   "Percentile: ", 50, sep = "")))}}
+                                   "Percentile: ", 0.5, sep = "")))}}
+  }
   
+  #2nd y axis
   p1<- p1+scale_y_continuous(position = "left")
   p2<- p2+scale_y_continuous(position = "right")
   
+  if (plot=="ggplot"){
+    p <- grid.arrange(p1,p2,nrow=1);
+    
+    {if(legend.pos=="top"){
+      p<-p+ theme(legend.title = element_blank(),
+                  legend.position = "top")
+    }
+      else if(legend.pos=="topleft"){
+        p<-p+ theme(legend.title = element_blank(),
+                    legend.justification = "left",
+                    legend.position = "top")
+      }
+      else if(legend.pos=="bottomright"){
+        p<-p+ theme(legend.title = element_blank(),
+                    legend.justification = "right",
+                    legend.position = "bottom")
+      }
+      else if(legend.pos=="bottom"){
+        p<-p+ theme(legend.title = element_blank(),
+                    legend.position = "bottom")
+      }
+      else if(legend.pos=="bottomleft"){
+        p<-p+ theme(legend.title = element_blank(),
+                    legend.justification = "left",
+                    legend.position = "bottom")
+      }
+      else if(legend.pos=="right"){
+        p<-p+ theme(legend.title = element_blank(),
+                    legend.justification = "right")
+      }
+      else if(legend.pos=="left"){
+        p<-p+ theme(legend.title = element_blank(),
+                    legend.position  = "left")
+      }
+      else if(legend.pos=="center"){
+        p<-p+ theme(legend.title = element_blank(),
+                    legend.position = "inside")
+      }
+      else{
+        p<-p+ theme(legend.title = element_blank(),
+                    legend.justification = "right",
+                    legend.position = "top")
+      }}
+    p
+    
+  }
+  else{
   # Convert ggplot objects to plotly objects
   p1_plotly <- ggplotly(p1,dynamicTicks = TRUE,tooltip = c("text"))
   p2_plotly <- ggplotly(p2, dynamicTicks = TRUE,tooltip = c("text"))
   
   # Add annotations for subplot titles
-  if (title==TRUE){
-  p1_plotly <- p1_plotly %>%
-    layout(
-      annotations = list(
-        list(
-          x = 0.5, y = 1, # Adjust x and y to position the title
-          text = title1, # Set the title for subplot 1
-          showarrow = FALSE,
-          xref = "paper", yref = "paper",
-          xanchor = "center", yanchor = "top",
-          font = list(size = 20)
-        )
-      )
-    )
+  # if (title==TRUE){
+  #   p1_plotly <- p1_plotly %>%
+  #     layout(
+  #       annotations = list(
+  #         list(
+  #           x = 0.5, y = 1, # Adjust x and y to position the title
+  #           text = title_left, # Set the title for subplot 1
+  #           showarrow = FALSE,
+  #           xref = "paper", yref = "paper",
+  #           xanchor = "center", yanchor = "top",
+  #           font = list(size = 20)
+  #         )
+  #       )
+  #     )
+  #   
+  #   p2_plotly <- p2_plotly %>%
+  #     layout(
+  #       annotations = list(
+  #         list(
+  #           x = 0.5, y = 1, # Adjust x and y to position the title
+  #           text = title_right, # Set the title for subplot 2
+  #           showarrow = FALSE,
+  #           xref = "paper", yref = "paper",
+  #           xanchor = "center", yanchor = "top",
+  #           font = list(size = 20)
+  #         )
+  #       )
+  #     )
+  # }
   
-  p2_plotly <- p2_plotly %>%
-    layout(
-      annotations = list(
-        list(
-          x = 0.5, y = 1, # Adjust x and y to position the title
-          text = title2, # Set the title for subplot 2
-          showarrow = FALSE,
-          xref = "paper", yref = "paper",
-          xanchor = "center", yanchor = "top",
-          font = list(size = 20)
-        )
-      )
-    )
-  }
   # Combine both plots using subplot with shared axes
   myplot <- subplot(p1_plotly, p2_plotly, nrows = 1, margin = 0,shareX = TRUE)
+  
+  #Sort out legend
+  #delete every other legend element (as duplicated due to 2 subplots)
   count<-0
   for (i in 1:length(myplot$x$data)/2){
     if (count == 1){
-    myplot$x$data[[i]]$showlegend <- FALSE
-    count <- 0
+      myplot$x$data[[i]]$showlegend <- FALSE
+      count <- 0
     }else{
       count <- 1
     }
   }
   
+  #restructure legend appearance
   for (i in 1:length(myplot$x$data)) {
     if (!is.null(myplot$x$data[[i]]$name)) {
-        interval <- gsub(".*\\((\\[.*?\\)),.*", "\\1", myplot$x$data[[i]]$name)
-      }
-      myplot$x$data[[i]]$name <- interval
+      interval <- gsub(".*\\((\\[.*?\\)),.*", "\\1", myplot$x$data[[i]]$name)
+    }
+    myplot$x$data[[i]]$name <- interval
   }
   for (i in 1:length(myplot$x$data)) {
     if (!is.null(myplot$x$data[[i]]$name)) {
@@ -611,6 +494,7 @@ interactiveeafdiffplot <- function(
     myplot$x$data[[i]]$name <- interval
   }
   
+  #set legend position
   {if(legend.pos=="top"){
     myplot<-myplot%>%
       layout(legend = list(orientation = "h",xanchor="center",yanchor="top", y = 0.99, x = 0.5))
@@ -648,6 +532,7 @@ interactiveeafdiffplot <- function(
         layout(legend = list(orientation = "v",xanchor="right",yanchor="top", y = 0.99, x = 0.995))
     }}
   
+  #set axis limits
   a <- max(max(newdata2$Time),max(newdata22$Time))
   b <- min(min(newdata2$Time),min(newdata22$Time))
   c <- max(max(newdata2$Best),max(newdata22$Best))
@@ -673,24 +558,29 @@ interactiveeafdiffplot <- function(
   }else{
     myplot <- myplot %>%
       layout(
-        yaxis2 = list(side = "right"),
-        xaxis2 = list(side = "top")
+        yaxis2 = list(title =ylabel,matches="y",side = "right"),
+        xaxis2 = list(title =xlabel,matches="x",side = "top")
       )
   }
+  
+  #set scientific notation
   if (sci.notation==TRUE){
     myplot<-myplot %>%
       layout(
         xaxis = list(tickformat=".2e"),
-        yaxis = list(tickformat=".2e")
+        yaxis = list(tickformat=".2e"),
+        xaxis2 = list(tickformat=".2e"),
+        yaxis2 = list(tickformat=".2e")
       )
   }
-  
-  return(myplot)
-}
+  return(myplot)}}
 
 #Testing data
 extdata_dir <- system.file(package="moocore", "extdata")
 A1 <- read_datasets(file.path(extdata_dir, "ALG_1_dat.xz"))
 A2 <- read_datasets(file.path(extdata_dir, "ALG_2_dat.xz"))
-interactiveeafdiffplot(x=A1,y=A2,maximise = FALSE,type = "area",legend.pos = "top",xlabel = "one",
-                   ylabel = "two",title=TRUE,title1="hi",title2="bye")
+interactiveeafdiffplot(data_left=A1,data_right=A2,maximise = c(TRUE),type = "area",
+                       legend.pos = "topright",xlabel = "one",
+                       ylabel = "two",title=TRUE,title_left="hi",title_right="bye",
+                       sci.notation = TRUE,grand.lines=TRUE,
+                       plot = "plotly")
