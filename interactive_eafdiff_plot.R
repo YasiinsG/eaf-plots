@@ -10,13 +10,9 @@ library(tidyverse)
 library(ggpubr)
 library(stringr)
 library(gridExtra)
+library(patchwork)
 
-# eafdiffplot(
-#   full.eaf = FALSE,
-# )
-#sort out title
-#sort out ends of plots for ggplot
-#sort out sci notation and axis position for right plot in ggplot
+#sort out legend for ggplot
 
 interactiveeafdiffplot <- function(
     data_left,
@@ -26,6 +22,7 @@ interactiveeafdiffplot <- function(
     grand.lines = TRUE,
     col=c("white","#808080","black"),#change
     type="point",
+    full.eaf=FALSE,
     lty="solid",
     psize=0.1,
     pshape=16,
@@ -159,14 +156,23 @@ interactiveeafdiffplot <- function(
   #get extended plot lines for p1
   uniqueScenario <- unique(newdata2$Scenario)
   newdata3 <- process_data(newdata2, uniqueScenario)
-  if (plot=="plotly"){
-    if (all(maximise == c(FALSE,TRUE))) {
-      newdata3<-arrange(newdata3,newdata3$Best)
-    }
-    else if (all(maximise == c(TRUE, FALSE))){
-      newdata3<-arrange(newdata3,desc(newdata3$Time))
-    }
-    }
+  
+  if (all(maximise == c(FALSE,TRUE))) {
+    newdata3<-arrange(newdata3,newdata3$Best)
+    newdata3<-arrange(newdata3,newdata3$Scenario)
+  }
+  else if (all(maximise == c(FALSE,FALSE))){
+    newdata3<-arrange(newdata3,desc(newdata3$Best))
+    newdata3<-arrange(newdata3,newdata3$Scenario)
+  }
+  else if (all(maximise == c(TRUE,FALSE))){
+    newdata3<-arrange(newdata3,newdata3$Best)
+    newdata3<-arrange(newdata3,newdata3$Scenario)
+  }
+  else {
+    newdata3<-arrange(newdata3,desc(newdata3$Best))
+    newdata3<-arrange(newdata3,newdata3$Scenario)
+  }
   
   #set colours
   pal<-colorRampPalette(colors=col,space="Lab")
@@ -191,8 +197,8 @@ interactiveeafdiffplot <- function(
       }
     } +
     labs(color = NULL) +
-    geom_step(direction = dir,linetype=lty) +
-    {if(type=="area"){
+    geom_step(direction = dir,linetype=lty,show.legend = FALSE) +
+    {if(full.eaf==TRUE){
       if (any(c("white") %in% col)){
         scale_fill_manual(values = plotcol[plotcol != "#FFFFFF"],name="")
       }
@@ -202,16 +208,13 @@ interactiveeafdiffplot <- function(
     }
     } +
     {if(psize!=0){
-      geom_point(size=psize,stroke=0,shape=pshape,
+      geom_point(size=psize,stroke=0,shape=pshape,show.legend = FALSE,
                  aes(text= paste("Objective 1: ", Time, "<br>",
                                  "Objective 2: ", Best, "<br>",
                                  "Percentile: ", Scenario, sep = "")))
     }}+
     theme_bw() +
-    theme(legend.position = legend.pos)+
-    {if (sci.notation==TRUE){
-      theme(axis.text.x = element_text(angle = 90))
-    }}+
+    theme(legend.position = legend.pos,plot.margin = margin(0,0,0,0))+
     {if (is.null(xlabel)){
       xlab(colnames(newdata3)[1])}
       else {
@@ -221,17 +224,32 @@ interactiveeafdiffplot <- function(
       else {
         ylab(ylabel)}}
   
+  {if (sci.notation==TRUE){
+    p1<-p1+theme(axis.text.x = element_text(angle = 90))+
+      scale_x_continuous(labels = function(x) format(x, scientific = TRUE))+
+      scale_y_continuous(labels = function(x) format(x, scientific = TRUE))}}
+  
+  
   #get extended plot lines for p2
   uniqueScenario2 <- unique(newdata22$Scenario)
   newdata4 <- process_data(newdata22, uniqueScenario2)
-  if (plot=="plotly"){
-    if (all(maximise == c(FALSE,TRUE))) {
-      newdata4<-arrange(newdata4,newdata4$Best)
-    }
-    else if (all(maximise == c(TRUE, FALSE))){
-      newdata4<-arrange(newdata4,desc(newdata4$Time))
-    }
-    }
+
+  if (all(maximise == c(FALSE,TRUE))) {
+    newdata4<-arrange(newdata4,newdata4$Best)
+    newdata4<-arrange(newdata4,newdata4$Scenario)
+  }
+  else if (all(maximise == c(FALSE,FALSE))){
+    newdata4<-arrange(newdata4,desc(newdata4$Best))
+    newdata4<-arrange(newdata4,newdata4$Scenario)
+  }
+  else if (all(maximise == c(TRUE,FALSE))){
+    newdata4<-arrange(newdata4,newdata4$Best)
+    newdata4<-arrange(newdata4,newdata4$Scenario)
+  }
+  else {
+    newdata4<-arrange(newdata4,desc(newdata4$Best))
+    newdata4<-arrange(newdata4,newdata4$Scenario)
+  }
   
   # change data
   newdata4 <- newdata4 %>%
@@ -250,8 +268,8 @@ interactiveeafdiffplot <- function(
       }
     } +
     labs(color = NULL) +
-    geom_step(direction = dir,linetype=lty) +
-    {if(type=="area"){
+    geom_step(direction = dir,linetype=lty,show.legend = FALSE) +
+    {if(full.eaf==TRUE){
       if (any(c("white") %in% col)){
         scale_fill_manual(values = plotcol[plotcol != "#FFFFFF"],name="")
       }
@@ -261,16 +279,13 @@ interactiveeafdiffplot <- function(
     }
     } +
     {if(psize!=0){
-      geom_point(size=psize,stroke=0,shape=pshape,
+      geom_point(size=psize,stroke=0,shape=pshape,show.legend = FALSE,
                  aes(text= paste("Objective 1: ", Time, "<br>",
                                  "Objective 2: ", Best, "<br>",
                                  "Percentile: ", Scenario, sep = "")))
     }}+
     theme_bw() +
-    theme(legend.position = legend.pos)+
-    {if (sci.notation==TRUE){
-      theme(axis.text.x = element_text(angle = 90))
-    }}+
+    theme(legend.position = legend.pos,plot.margin = margin(0,0,0,0))+
     {if (is.null(xlabel)){
       xlab(colnames(newdata3)[1])}
       else {
@@ -280,8 +295,13 @@ interactiveeafdiffplot <- function(
       else {
         ylab(ylabel)}}
   
+  {if (sci.notation==TRUE){
+    p2<-p2+theme(axis.text.x = element_text(angle = 90))+
+      scale_x_continuous(labels = function(x) format(x, scientific = TRUE))+
+      scale_y_continuous(labels = function(x) format(x, scientific = TRUE))}}
+  
   #If plotting area
-  if (type=="area"){
+  if (full.eaf==TRUE){
     if (all(maximise==c(TRUE,TRUE))){
       p2<-p2+
         geom_rect(aes(xmin = Time, xmax = limvarfill*-1 , ymin = Best, ymax = limvarfill*-1, fill = Scenario), colour=NA)
@@ -302,9 +322,9 @@ interactiveeafdiffplot <- function(
     }
     else{
       p2<-p2+
-        geom_rect(aes(xmin = next_Time, xmax = limvarfill, ymin = next_Best, ymax = limvarfill*-1, fill = Scenario),colour=NA)
+        geom_rect(aes(xmin = Time, xmax = limvarfill, ymin = Best, ymax = limvarfill*-1, fill = Scenario),colour=NA)
       p1<-p1+
-        geom_rect(aes(xmin = next_Time, xmax = limvarfill, ymin = next_Best, ymax = limvarfill*-1, fill = Scenario),colour=NA)
+        geom_rect(aes(xmin = Time, xmax = limvarfill, ymin = Best, ymax = limvarfill*-1, fill = Scenario),colour=NA)
     }
   }
   
@@ -321,59 +341,77 @@ interactiveeafdiffplot <- function(
     eafdatajoint2 <- process_data(eafdatajoint2, uniqueScenarios[[2]])
     eafdata50 <- process_data(eafdata50, uniqueScenarios[[3]])
     eafdata250 <- process_data(eafdata250, uniqueScenarios[[4]])
-    if (all(maximise == c(FALSE, TRUE))) {
+
+    if (all(maximise == c(FALSE,TRUE))) {
       eafdatajoint1<-arrange(eafdatajoint1,eafdatajoint1$Best)
       eafdatajoint2<-arrange(eafdatajoint2,eafdatajoint2$Best)
       eafdata50<-arrange(eafdata50,eafdata50$Best)
       eafdata250<-arrange(eafdata250,eafdata250$Best)
     }
-    else if (all(maximise == c(TRUE, FALSE))){
-      eafdatajoint1<-arrange(eafdatajoint1,desc(eafdatajoint1$Time))
-      eafdatajoint2<-arrange(eafdatajoint2,desc(eafdatajoint2$Time))
-      eafdata50<-arrange(eafdata50,desc(eafdata50$Time))
-      eafdata250<-arrange(eafdata250,desc(eafdata250$Time))
+    else if (all(maximise == c(FALSE,FALSE))){
+      eafdatajoint1<-arrange(eafdatajoint1,desc(eafdatajoint1$Best))
+      eafdatajoint2<-arrange(eafdatajoint2,desc(eafdatajoint2$Best))
+      eafdata50<-arrange(eafdata50,desc(eafdata50$Best))
+      eafdata250<-arrange(eafdata250,desc(eafdata250$Best))
+    }
+    else if (all(maximise == c(TRUE,FALSE))){
+      eafdatajoint1<-arrange(eafdatajoint1,eafdatajoint1$Best)
+      eafdatajoint2<-arrange(eafdatajoint2,eafdatajoint2$Best)
+      eafdata50<-arrange(eafdata50,eafdata50$Best)
+      eafdata250<-arrange(eafdata250,eafdata250$Best)
+    }
+    else {
+      eafdatajoint1<-arrange(eafdatajoint1,desc(eafdatajoint1$Best))
+      eafdatajoint2<-arrange(eafdatajoint2,desc(eafdatajoint2$Best))
+      eafdata50<-arrange(eafdata50,desc(eafdata50$Best))
+      eafdata250<-arrange(eafdata250,desc(eafdata250$Best))
+    }
+    
+    linecol="white"
+    if (full.eaf != TRUE){
+      linecol<-"black"
     }
     
     p1<-p1+
-      geom_step(data = eafdatajoint1,aes(x=Time,y=Best),color= "black",lwd=0.25,direction = dir)+
+      geom_step(data = eafdatajoint1,aes(x=Time,y=Best),color= "black",lwd=0.25,direction = dir,show.legend = FALSE)+
       {if(psize!=0){
-        geom_point(data = eafdatajoint1,stroke=0,color="black",size=psize,shape=pshape,
+        geom_point(data = eafdatajoint1,stroke=0,color="black",size=psize,shape=pshape,show.legend = FALSE,
                    aes(text= paste("Objective 1: ", Time, "<br>",
                                    "Objective 2: ", Best, "<br>",
                                    "Percentile: ", "Grand Worst", sep = "")))}}+
       
-      geom_step(data = eafdatajoint2,aes(x=Time,y=Best),color= "white",lwd=0.25,direction = dir)+
+      geom_step(data = eafdatajoint2,aes(x=Time,y=Best),color= linecol,lwd=0.25,direction = dir,show.legend = FALSE)+
       {if(psize!=0){
-        geom_point(data = eafdatajoint2,stroke=0,color="white",size=psize,shape=pshape,
+        geom_point(data = eafdatajoint2,stroke=0,color=linecol,size=psize,shape=pshape,show.legend = FALSE,
                    aes(text= paste("Objective 1: ", Time, "<br>",
                                    "Objective 2: ", Best, "<br>",
                                    "Percentile: ", "Grand Best", sep = "")))}}+
       
-      geom_step(data = eafdata50,aes(x=Time,y=Best),color= "black",linetype="dotted",lwd=0.25,direction = dir)+
+      geom_step(data = eafdata50,aes(x=Time,y=Best),color= "black",linetype="dotted",lwd=0.25,direction = dir,show.legend = FALSE)+
       {if(psize!=0){
-        geom_point(data = eafdata50,stroke=0,color="black",size=psize,shape=pshape,
+        geom_point(data = eafdata50,stroke=0,color="black",size=psize,shape=pshape,show.legend = FALSE,
                    aes(text= paste("Objective 1: ", Time, "<br>",
                                    "Objective 2: ", Best, "<br>",
                                    "Percentile: ", 0.5, sep = "")))}}
     
     p2<-p2+
-      geom_step(data = eafdatajoint1,aes(x=Time,y=Best),color= "black",lwd=0.25,direction = dir) +
+      geom_step(data = eafdatajoint1,aes(x=Time,y=Best),color= "black",lwd=0.25,direction = dir,show.legend = FALSE) +
       {if(psize!=0){
-        geom_point(data = eafdatajoint1,stroke=0,color="black",size=psize,shape=pshape,
+        geom_point(data = eafdatajoint1,stroke=0,color="black",size=psize,shape=pshape,show.legend = FALSE,
                    aes(text= paste("Objective 1: ", Time, "<br>",
                                    "Objective 2: ", Best, "<br>",
                                    "Percentile: ", "Grand Worst", sep = "")))}}+
       
-      geom_step(data = eafdatajoint2,aes(x=Time,y=Best),color= "white",lwd=0.25,direction = dir)+
+      geom_step(data = eafdatajoint2,aes(x=Time,y=Best),color= linecol,lwd=0.25,direction = dir,show.legend = FALSE)+
       {if(psize!=0){
-        geom_point(data = eafdatajoint2,stroke=0,color="white",size=psize,shape=pshape,
+        geom_point(data = eafdatajoint2,stroke=0,color=linecol,size=psize,shape=pshape,show.legend = FALSE,
                    aes(text= paste("Objective 1: ", Time, "<br>",
                                    "Objective 2: ", Best, "<br>",
                                    "Percentile: ", "Grand Best", sep = "")))}}+
       
-      geom_step(data = eafdata250,aes(x=Time,y=Best),color= "black",linetype="dotted",lwd=0.25,direction = dir)+
+      geom_step(data = eafdata250,aes(x=Time,y=Best),color= "black",linetype="dotted",lwd=0.25,direction = dir,show.legend = FALSE)+
       {if(psize!=0){
-        geom_point(data = eafdata250,stroke=0,color="black",size=psize,shape=pshape,
+        geom_point(data = eafdata250,stroke=0,color="black",size=psize,shape=pshape,show.legend = FALSE,
                    aes(text= paste("Objective 1: ", Time, "<br>",
                                    "Objective 2: ", Best, "<br>",
                                    "Percentile: ", 0.5, sep = "")))}}
@@ -384,9 +422,17 @@ interactiveeafdiffplot <- function(
   p2<- p2+scale_y_continuous(position = "right")
   
   if (plot=="ggplot"){
-    p <- grid.arrange(p1,p2,nrow=1);
+    p2<-p2+scale_x_continuous(position = "top")
+    p1<-p1+
+      ggtitle(title_left)+
+      theme(plot.title = element_text(hjust = 0.5))
+    p2<-p2+
+      ggtitle(title_right)+
+      theme(plot.title = element_text(hjust = 0.5))
     
-    {if(legend.pos=="top"){
+    p<-p1 + p2
+    
+    if(legend.pos=="top"){
       p<-p+ theme(legend.title = element_blank(),
                   legend.position = "top")
     }
@@ -425,7 +471,7 @@ interactiveeafdiffplot <- function(
         p<-p+ theme(legend.title = element_blank(),
                     legend.justification = "right",
                     legend.position = "top")
-      }}
+      }
     p
     
   }
@@ -435,35 +481,35 @@ interactiveeafdiffplot <- function(
   p2_plotly <- ggplotly(p2, dynamicTicks = TRUE,tooltip = c("text"))
   
   # Add annotations for subplot titles
-  # if (title==TRUE){
-  #   p1_plotly <- p1_plotly %>%
-  #     layout(
-  #       annotations = list(
-  #         list(
-  #           x = 0.5, y = 1, # Adjust x and y to position the title
-  #           text = title_left, # Set the title for subplot 1
-  #           showarrow = FALSE,
-  #           xref = "paper", yref = "paper",
-  #           xanchor = "center", yanchor = "top",
-  #           font = list(size = 20)
-  #         )
-  #       )
-  #     )
-  #   
-  #   p2_plotly <- p2_plotly %>%
-  #     layout(
-  #       annotations = list(
-  #         list(
-  #           x = 0.5, y = 1, # Adjust x and y to position the title
-  #           text = title_right, # Set the title for subplot 2
-  #           showarrow = FALSE,
-  #           xref = "paper", yref = "paper",
-  #           xanchor = "center", yanchor = "top",
-  #           font = list(size = 20)
-  #         )
-  #       )
-  #     )
-  # }
+  if (title==TRUE){
+    p1_plotly <- p1_plotly %>%
+      layout(
+        annotations = list(
+          list(
+            x = 0.5, y = 1.05, # Adjust x and y to position the title
+            text = title_left, # Set the title for subplot 1
+            showarrow = FALSE,
+            xref = "paper", yref = "paper",
+            xanchor = "center", yanchor = "top",
+            font = list(size = 20)
+          )
+        )
+      )
+
+    p2_plotly <- p2_plotly %>%
+      layout(
+        annotations = list(
+          list(
+            x = 0.5, y = -0.05, # Adjust x and y to position the title
+            text = title_right, # Set the title for subplot 2
+            showarrow = FALSE,
+            xref = "paper", yref = "paper",
+            xanchor = "center", yanchor = "bottom",
+            font = list(size = 20)
+          )
+        )
+      )
+  }
   
   # Combine both plots using subplot with shared axes
   myplot <- subplot(p1_plotly, p2_plotly, nrows = 1, margin = 0,shareX = TRUE)
@@ -546,7 +592,7 @@ interactiveeafdiffplot <- function(
   min_y <- d-y_padding
   max_y <- c + y_padding
   
-  if (type=="area"){
+  if (full.eaf==TRUE){
     
     myplot <- myplot %>%
       layout(
@@ -579,8 +625,9 @@ interactiveeafdiffplot <- function(
 extdata_dir <- system.file(package="moocore", "extdata")
 A1 <- read_datasets(file.path(extdata_dir, "ALG_1_dat.xz"))
 A2 <- read_datasets(file.path(extdata_dir, "ALG_2_dat.xz"))
-interactiveeafdiffplot(data_left=A1,data_right=A2,maximise = c(TRUE),type = "area",
-                       legend.pos = "topright",xlabel = "one",
-                       ylabel = "two",title=TRUE,title_left="hi",title_right="bye",
-                       sci.notation = TRUE,grand.lines=TRUE,
-                       plot = "plotly")
+
+interactiveeafdiffplot(data_left=A1,data_right=A2,maximise = FALSE,type = "area",
+                       legend.pos = "bottomleft",xlabel = "Objective 1",
+                       ylabel = "Objective 2",title=TRUE,title_left="Plot 1",
+                       title_right="Plot 2",sci.notation = TRUE,
+                       grand.lines=TRUE, plot = "plotly",full.eaf=TRUE)
