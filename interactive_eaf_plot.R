@@ -26,6 +26,16 @@ interactiveeafplot <- function(
     sci.notation=FALSE,
     plot="plotly"){
   
+  if (all(maximise == c(TRUE, TRUE))) {
+    dir<-"vh"
+  } else if (all(maximise == c(FALSE, FALSE))) {
+    dir<-"hv"
+  } else if (all(maximise == c(TRUE, FALSE))) {
+    dir<-"vh"
+  } else {
+    dir<-"vh"
+  }
+  
   if (plot=="plotly"){
     limvar <- .Machine$double.xmax
     limvarfill <- .Machine$integer.max
@@ -72,21 +82,39 @@ interactiveeafplot <- function(
   big_data = data.frame(do.call(rbind, datalist))
   big_data2 = data.frame(do.call(rbind, datalist2))
   
-  if (all(maximise==c(TRUE,TRUE))){
-    big_data$Time <- limvar*-1
-    big_data2$Best <- limvar*-1}
-  else if(all(maximise==c(FALSE,FALSE))){
+  if (all(maximise == c(TRUE, TRUE))) {
+    big_data$Best <- limvar * -1
+    big_data2$Time <- limvar * -1
+  } else if (all(maximise == c(FALSE, FALSE))) {
     big_data$Best <- limvar
-    big_data2$Time <- limvar}
-  else if(all(maximise==c(TRUE,FALSE))){
+    big_data2$Time <- limvar
+  } else if (all(maximise == c(TRUE, FALSE))) {
     big_data$Best <- limvar
-    big_data2$Time <- limvar*-1}
-  else{
-    big_data$Time <- limvar
-    big_data2$Best <- limvar*-1}
+    big_data2$Time <- limvar * -1
+  } else {
+    big_data$Best <- limvar *-1
+    big_data2$Time <- limvar 
+  }
   
   big_data3 <- rbind(big_data2,big_data)
   newdata3<- rbind(newdata2,big_data3)
+  
+  if (all(maximise == c(FALSE,TRUE))) {
+    newdata3<-arrange(newdata3,newdata3$Best)
+    newdata3<-arrange(newdata3,newdata3$Scenario)
+  }
+  else if (all(maximise == c(FALSE,FALSE))){
+    newdata3<-arrange(newdata3,desc(newdata3$Best))
+    newdata3<-arrange(newdata3,newdata3$Scenario)
+  }
+  else if (all(maximise == c(TRUE,FALSE))){
+    newdata3<-arrange(newdata3,newdata3$Best)
+    newdata3<-arrange(newdata3,newdata3$Scenario)
+  }
+  else {
+    newdata3<-arrange(newdata3,desc(newdata3$Best))
+    newdata3<-arrange(newdata3,newdata3$Scenario)
+  }
   
   pal<-colorRampPalette(colors=col,space="Lab")
   if (any(c("white") %in% col)){
@@ -111,7 +139,7 @@ interactiveeafplot <- function(
       }
     } +
     labs(color = NULL) +
-    geom_step(direction = "vh",linetype=lty,show.legend = FALSE) +
+    geom_step(direction = dir,linetype=lty,show.legend = FALSE) +
     {if(type=="area"){
       if (any(c("white") %in% col)){
         scale_fill_manual(values = plotcol[plotcol != "#FFFFFF"],name="")
@@ -197,20 +225,20 @@ interactiveeafplot <- function(
   if (type=="area"){
     if (all(maximise==c(TRUE,TRUE))){
       p<-p+
-        geom_rect(aes(xmin = Time, xmax = limvarfill *-1, ymin = Best, ymax = limvarfill*-1, fill = Scenario), colour=NA)
-    }
+        geom_rect(aes(xmin = Time, xmax = limvarfill*-1 , ymin = Best, ymax = limvarfill*-1, fill = Scenario), colour=NA)
+      }
     else if(all(maximise==c(FALSE,FALSE))){
       p<-p+
-        geom_rect(aes(xmin = Time, xmax = limvarfill, ymin =limvarfill,ymax=next_Best, fill = Scenario),colour=NA)
-    }
+        geom_rect(aes(xmin = Time, xmax = limvarfill, ymin =limvarfill,ymax=Best, fill = Scenario), colour=NA)
+      }
     else if(all(maximise==c(TRUE,FALSE))){
       p<-p+
-        geom_rect(aes(xmin = Time, xmax = limvarfill*-1, ymin = Best, ymax = limvarfill, fill = Scenario), colour=NA)
-    }
+        geom_rect(aes(xmin = Time, xmax = limvarfill*-1, ymin = Best, ymax = limvarfill, fill = Scenario),colour=NA)
+      }
     else{
       p<-p+
-        geom_rect(aes(xmin = Time, xmax = limvarfill, ymin = next_Best, ymax = limvarfill*-1, fill = Scenario), colour=NA)
-    }
+        geom_rect(aes(xmin = Time, xmax = limvarfill, ymin = next_Best, ymax = limvarfill*-1, fill = Scenario),colour=NA)
+      }
   }
   
   if (plot=="ggplot"){
@@ -309,7 +337,7 @@ interactiveeafplot(mydata, c(0,50,100), col=c("yellow","red"),
                    maximise=FALSE, type="area", lty="longdash",
                    psize=3, pshape=10, legend.pos="topright",
                    xaxis.side="top", yaxis.side="left", axes=TRUE,
-                   sci.notation=TRUE, xlabel="MIN X", ylabel="MIN Y",
+                   sci.notation=FALSE, xlabel="MIN X", ylabel="MIN Y",
                    plot="plotly")
 #
 # interactiveeafplot(mydata, c(0,50,100), col=c("yellow","red"),
@@ -337,8 +365,8 @@ interactiveeafplot(mydata, c(0,50,100), col=c("yellow","red"),
 # SPEA2minstoptimeRichmond[,2] <- SPEA2minstoptimeRichmond[,2] / 60
 # 
 # interactiveeafplot(SPEA2minstoptimeRichmond, percentiles = c(0,50,100),
-#                    col=c("yellow","red"),maximise=FALSE, type="area",
-#                    lty="longdash", psize=3, pshape=10, legend.pos="bottomleft",
+#                    col=c("yellow","red"),maximise=c(TRUE,FALSE), type="point",
+#                    lty="longdash", psize=3, pshape=10, legend.pos="topleft",
 #                    xaxis.side="bottom", yaxis.side="left", axes=TRUE,
 #                    sci.notation=FALSE, xlabel = "C[E]",
 #                    ylabel = "Minimum idle time (minutes)",
