@@ -89,6 +89,28 @@
 ## <ins>  Week 5 </ins> (W/B 8/7)
 
 **Monday**
+   - Morning: Meeting and started looking at eafdiff plots.
+   - Afternoon: Started to implement eafdiff plots
+     
+ **Tuesday:**
+   - Morning: Implmementing two window aspects of eafdiff plots
+   - Afternoon: Implementing other visual aspects
+     
+ **Wednesday:**
+   - Morning: Troubleshooting issues with the eafdiff plot
+   - Afternoon: Starting to add ggplot functionality
+     
+ **Thursday:**
+   - Morning: Adding ggplot functionality
+   - Afternoon: Adding ggplot functionality
+     
+ **Friday:**
+   - Morning: Putting the program together with all the different parameters.
+   - Afternoon: Completing full.eaf aspects.
+
+## <ins>  Week 5 </ins> (W/B 8/7)
+
+**Monday**
    - Morning: 
    - Afternoon: 
      
