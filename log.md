@@ -108,7 +108,29 @@
    - Morning: Putting the program together with all the different parameters.
    - Afternoon: Completing full.eaf aspects.
 
-## <ins>  Week 5 </ins> (W/B 8/7)
+## <ins>  Week 6 </ins> (W/B 15/7)
+
+**Monday**
+   - Morning: Adding point and area functionality to eafdiff
+   - Afternoon: Adding point and area functionality to eafdiff
+     
+ **Tuesday:**
+   - Morning: Troubleshooting problems with point plotting
+   - Afternoon: Working on eafdiff functionality
+     
+ **Wednesday:**
+   - Morning: Working on symdev plot
+   - Afternoon: Plotting points on 3d plot
+     
+ **Thursday:**
+   - Morning: Finishing main code on eafdiff
+   - Afternoon: Troubleshooting issues with points plotted on eafdiff
+     
+ **Friday:**
+   - Morning: Troubleshooting issues with points plotted on eafdiff
+   - Afternoon: Plotting surfaces on 3d plot.
+
+## <ins>  Week 7 </ins> (W/B 22/7)
 
 **Monday**
    - Morning: 
