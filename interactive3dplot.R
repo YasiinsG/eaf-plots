@@ -126,6 +126,6 @@ x <- x[x[, 4] >= 8, ]
 #type=mesh+markers
 #cube, separate plot for each, grid
 
-interactiveeafplot(x, c(0,50,100), col=c("red","orange","yellow"), type="cube",
+interactiveeafplot(x, c(0,50,100), col=c("red","orange","yellow"), type="scatter",
                    psize=3, legend.pos="topright", sci.notation=FALSE, 
                    xlabel="MIN X", ylabel="MIN Y", zlabel="MIN Z")
