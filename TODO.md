@@ -2,7 +2,7 @@
    - [x] Fix zoom
    - [x] Handle maximise parameter
    - [x] Handle type="area"
- - [ ] Interactive eafdiffplot()
+ - [x] Interactive eafdiffplot()
  - [ ] Interactive symdevplot():
 https://multi-objective.github.io/mooplot/r/reference/symdevplot.html
  - [ ] R version of Python's plot_pf:
