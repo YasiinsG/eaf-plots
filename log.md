@@ -133,6 +133,28 @@
 ## <ins>  Week 7 </ins> (W/B 22/7)
 
 **Monday**
+   - Morning: Troubleshooting issues with point plotting and labelling
+   - Afternoon: Troubleshooting issues with point plotting and labelling
+     
+ **Tuesday:**
+   - Morning: Making sure all functionalities work and improving speed
+   - Afternoon: Finishing up the eafdiff function
+     
+ **Wednesday:**
+   - Morning: Attempting to improve the 3d plot
+   - Afternoon: Attempting to improve the mesh plot 
+     
+ **Thursday:**
+   - Morning: Trying to fill areas between plotted lines in symdev plot
+   - Afternoon: Trying to fill areas between plotted lines in symdev plot
+     
+ **Friday:**
+   - Morning: Holiday
+   - Afternoon: Holiday
+
+## <ins>  Week 8 </ins> (W/B 29/7)
+
+**Monday**
    - Morning: 
    - Afternoon: 
      
