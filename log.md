@@ -155,21 +155,21 @@
 ## <ins>  Week 8 </ins> (W/B 29/7)
 
 **Monday**
-   - Morning: 
-   - Afternoon: 
+   - Morning: Completing and cleaning each function
+   - Afternoon: Completing and cleaning each function
      
  **Tuesday:**
-   - Morning: 
-   - Afternoon: 
+   - Morning: Attempting to finish final symdev plot
+   - Afternoon: Finishing 3d plot
      
  **Wednesday:**
-   - Morning: 
-   - Afternoon: 
+   - Morning: Starting to write the package, looking at how to do this
+   - Afternoon: Writing package
      
  **Thursday:**
-   - Morning: 
-   - Afternoon: 
+   - Morning: Troubleshooting
+   - Afternoon: Troubleshooting
      
  **Friday:**
-   - Morning:
-   - Afternoon:
+   - Morning: Completing package requirements
+   - Afternoon: Pushing to create a website.
